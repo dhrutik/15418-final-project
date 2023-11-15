@@ -1,7 +1,7 @@
 # 15418-final-project
 
 ## TITLE: 
-An implementation of lock-free B+ Trees
+An implementation of lock-free B+ Trees by Dhruti Kuchibhotla (srisaidk) and Adhvik Kanagala (akanagal)
 
 ## URL: 
 https://github.com/dhrutik/15418-final-project/edit/main/README.md
