@@ -1,8 +1,10 @@
 package seq_tree
+
 // From https://github.com/collinglass/bptree
 import (
 	"errors"
 	"fmt"
+	"main/tree_api"
 	"reflect"
 )
 
@@ -23,10 +25,6 @@ type Tree struct {
 	Root *Node
 }
 
-type Record struct {
-	Value []byte
-}
-
 type Node struct {
 	Pointers []interface{}
 	Keys     []int
@@ -41,7 +39,7 @@ func NewTree() *Tree {
 }
 
 func (t *Tree) Insert(key int, value []byte) error {
-	var pointer *Record
+	var pointer *tree_api.Record
 	var leaf *Node
 
 	if _, err := t.Find(key, false); err == nil {
@@ -67,7 +65,7 @@ func (t *Tree) Insert(key int, value []byte) error {
 	return t.insertIntoLeafAfterSplitting(leaf, key, pointer)
 }
 
-func (t *Tree) Find(key int, verbose bool) (*Record, error) {
+func (t *Tree) Find(key int, verbose bool) (*tree_api.Record, error) {
 	i := 0
 	c := t.findLeaf(key, verbose)
 	if c == nil {
@@ -82,7 +80,7 @@ func (t *Tree) Find(key int, verbose bool) (*Record, error) {
 		return nil, errors.New("key not found")
 	}
 
-	r, _ := c.Pointers[i].(*Record)
+	r, _ := c.Pointers[i].(*tree_api.Record)
 
 	return r, nil
 }
@@ -107,7 +105,7 @@ func (t *Tree) FindAndPrintRange(key_start, key_end int, verbose bool) {
 		fmt.Println("None found,")
 	} else {
 		for i = 0; i < num_found; i++ {
-			c, _ := returned_pointers[i].(*Record)
+			c, _ := returned_pointers[i].(*tree_api.Record)
 			fmt.Printf("Key: %d  Location: %d  Value: %s\n",
 				returned_keys[i],
 				returned_pointers[i],
@@ -326,8 +324,8 @@ func cut(length int) int {
 }
 
 // INSERTION
-func makeRecord(value []byte) (*Record, error) {
-	new_record := new(Record)
+func makeRecord(value []byte) (*tree_api.Record, error) {
+	new_record := new(tree_api.Record)
 	if new_record == nil {
 		return nil, errors.New("Error: Record creation.")
 	} else {
@@ -373,7 +371,7 @@ func getLeftIndex(parent, left *Node) int {
 	return left_index
 }
 
-func insertIntoLeaf(leaf *Node, key int, pointer *Record) {
+func insertIntoLeaf(leaf *Node, key int, pointer *tree_api.Record) {
 	var i, insertion_point int
 
 	for insertion_point < leaf.NumKeys && leaf.Keys[insertion_point] < key {
@@ -390,7 +388,7 @@ func insertIntoLeaf(leaf *Node, key int, pointer *Record) {
 	return
 }
 
-func (t *Tree) insertIntoLeafAfterSplitting(leaf *Node, key int, pointer *Record) error {
+func (t *Tree) insertIntoLeafAfterSplitting(leaf *Node, key int, pointer *tree_api.Record) error {
 	var new_leaf *Node
 	var insertion_index, split, new_key, i, j int
 	var err error
@@ -570,7 +568,7 @@ func (t *Tree) insertIntoNewRoot(left *Node, key int, right *Node) error {
 	return nil
 }
 
-func (t *Tree) startNewTree(key int, pointer *Record) error {
+func (t *Tree) startNewTree(key int, pointer *tree_api.Record) error {
 	t.Root, err = makeLeaf()
 	if err != nil {
 		return err
