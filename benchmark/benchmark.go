@@ -81,7 +81,7 @@ func RunFindBenchmark(tree tree_api.BPTree, numKeys int, threads int) (time.Dura
 	}
 	elapsedTime := time.Since(startTime)
 	throughput := float64(numKeys) / elapsedTime.Seconds()
-	fmt.Printf("Delete %d keys in %f seconds with %d threads, throughput: %f keys/s\n", numKeys, elapsedTime.Seconds(), threads, throughput)
+	fmt.Printf("Find %d keys in %f seconds with %d threads, throughput: %f keys/s\n", numKeys, elapsedTime.Seconds(), threads, throughput)
 	return elapsedTime, throughput
 }
 
