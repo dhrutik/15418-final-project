@@ -66,20 +66,26 @@ Go is a convenient language for our needs because it has a rich standard library
 ### Week of Nov. 20 (Thanksgiving)
   - Ensure initial implementation (from resource repo) works as intended
   - Read up on lock-free implementations, specifically with respect to tree-like data structures. Examine "simpler" data structures, such as AVL trees, standard self-balancing BSTs. Implement basic lock-free versions of these/find resources that implement lock-free versions to see what is generally done in the realm of tree data structures, and to give us a sense of how to begin our implementation on this more complex tree structure.
-  - Have a basic implementation on B+ trees written (but not necessarily working/debugged)
+ 
 
 ### Week of Nov. 27 (Note: Project milestone due Dec. 3)
-  - Do necessary debugging to ensure lock-free B+ tree implementation works correctly
-  - Complete Project milestone report
-  - Begin rough outline of the more formal final report
+  - Have a basic implementation on B+ trees written (but not necessarily working/debugged)
+  - Specifically, get latch-crabbing complete on the three main operations (Insert [Adhvik]) for B+ trees
+  - Complete Project milestone report (Dhruti)
 
 ### Week of Dec. 4 
-  - Run tests comparing our implementation to the reference latch-based implementation across various metrics
-  - Construct tables/graphs depicting the results of these tests
-  - Write introduction/background/methods/resources portion of the final report
+  - (Dec. 4) Complete latch-crabbing functionality (Find [Adhvik], Delete [Dhruti])
+  - (Dec. 4) Design of lock-free implementation [Advhik, Dhruti]
+  - (Dec. 5) Complete design of lock-free implementation [Advhik, Dhruti]
+  - (Dec. 6) Begin implementing lock-free structure [Adhvik]
+  - (Dec. 7) Bring lock-free B+ tree to debug-able state [Dhruti]
+  - (Dec. 10) Complete debugging B+ tree structure [Dhruti]
 
 ### Week of Dec. 11 (Note: Final project report due Dec. 14, Poster Presentation due Dec. 15)
-  - Finish writing the analysis portion of the final report
-  - Assemble poster with our figures
-  - Present!!
+  - (Dec. 11) Run tests comparing our implementation to the reference latch-based implementation across various metrics
+  - (Dec. 12) Construct tables/graphs depicting the results of these tests
+  - (Dec. 12) Write introduction/background/methods/resources portion of the final report
+  - (Dec. 14) Finish writing the analysis portion of the final report
+  - (Dec. 14) Assemble poster with our figures
+  - (Dec. 15) Present!!
 
