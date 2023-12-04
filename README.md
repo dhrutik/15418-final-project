@@ -71,7 +71,7 @@ Go is a convenient language for our needs because it has a rich standard library
 ### Week of Nov. 27 (Note: Project milestone due Dec. 3)
   - Have a basic implementation on B+ trees written (but not necessarily working/debugged)
   - Specifically, get latch-crabbing complete on the three main operations (Insert [Adhvik]) for B+ trees
-  - Complete Project milestone report (Dhruti)
+  - Complete Project milestone report [Dhruti]
 
 ### Week of Dec. 4 
   - (Dec. 4) Complete latch-crabbing functionality (Find [Adhvik], Delete [Dhruti])
@@ -82,10 +82,10 @@ Go is a convenient language for our needs because it has a rich standard library
   - (Dec. 10) Complete debugging B+ tree structure [Dhruti]
 
 ### Week of Dec. 11 (Note: Final project report due Dec. 14, Poster Presentation due Dec. 15)
-  - (Dec. 11) Run tests comparing our implementation to the reference latch-based implementation across various metrics
-  - (Dec. 12) Construct tables/graphs depicting the results of these tests
-  - (Dec. 12) Write introduction/background/methods/resources portion of the final report
-  - (Dec. 14) Finish writing the analysis portion of the final report
-  - (Dec. 14) Assemble poster with our figures
-  - (Dec. 15) Present!!
+  - (Dec. 11) Run tests comparing our implementation to the reference latch-based implementation across various metrics [Adhvik]
+  - (Dec. 12) Construct tables/graphs depicting the results of these tests [Dhruti]
+  - (Dec. 12) Write introduction/background/methods/resources portion of the final report [Adhvik]
+  - (Dec. 14) Finish writing the analysis portion of the final report [Dhruti]
+  - (Dec. 14) Assemble poster with our figures [Adhvik]
+  - (Dec. 15) Present!! [Dhruti, Adhvik]
 
