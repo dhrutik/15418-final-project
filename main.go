@@ -48,6 +48,6 @@ func main() {
 
 	runBenchmark("Insert", benchmark.RunInsertBenchmark, seqTree, globalLockTrees, crabTrees, keyCount, maxThreadCount)
 	runBenchmark("Find", benchmark.RunFindBenchmark, seqTree, globalLockTrees, crabTrees, keyCount, maxThreadCount)
-	runBenchmark("Delete", benchmark.RunDeleteBenchmark, seqTree, globalLockTrees, keyCount)
+	runBenchmark("Delete", benchmark.RunDeleteBenchmark, seqTree, globalLockTrees, crabTrees, keyCount, maxThreadCount)
 
 }
