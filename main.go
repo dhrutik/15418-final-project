@@ -45,11 +45,9 @@ func main() {
 	maxThreadCount := 64
 	globalLockTrees := makeTreeList(maxThreadCount, global_lock_tree.NewTree)
 	crabTrees := makeTreeList(maxThreadCount, crab.NewTree)
-	// globalLockTrees := makeGlobalLockTreeList(maxThreadCount)
-	// crabTrees := makeCrabTreeList(maxThreadCount)
 
 	runBenchmark("Insert", benchmark.RunInsertBenchmark, seqTree, globalLockTrees, crabTrees, keyCount, maxThreadCount)
 	runBenchmark("Find", benchmark.RunFindBenchmark, seqTree, globalLockTrees, crabTrees, keyCount, maxThreadCount)
-	// runBenchmark("Delete", benchmark.RunDeleteBenchmark, seqTree, globalLockTrees, keyCount)
+	runBenchmark("Delete", benchmark.RunDeleteBenchmark, seqTree, globalLockTrees, keyCount)
 
 }

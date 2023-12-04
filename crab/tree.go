@@ -42,6 +42,7 @@ func NewTree() tree_api.BPTree {
 }
 
 func (t *CrabTree) Insert(key int, value []byte) error {
+	// fmt.Println("Insert key", key, "value", value)
 	t.lock.Lock()
 
 	var pointer *tree_api.Record
@@ -74,6 +75,7 @@ func (t *CrabTree) Insert(key int, value []byte) error {
 			panic("lock list is not empty but child is safe")
 		}
 		insertIntoLeaf(leaf, key, pointer)
+		leaf.lock.Unlock()
 		return nil
 	}
 	defer t.clearLockList(treeLocked, lockList)
@@ -101,9 +103,13 @@ func (t *CrabTree) find(key int, verbose bool) (*tree_api.Record, error) {
 }
 
 func (t *CrabTree) Find(key int, verbose bool) (*tree_api.Record, error) {
-	t.lock.Lock()
-	defer t.lock.Unlock()
-	return t.find(key, verbose)
+	// t.lock.Lock()
+	// defer t.lock.Unlock()
+	res, err := t.find(key, verbose)
+	if err != nil {
+		fmt.Println("Find key", key)
+	}
+	return res, err
 }
 
 func (t *CrabTree) FindAndPrint(key int, verbose bool) {
