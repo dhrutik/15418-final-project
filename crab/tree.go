@@ -884,4 +884,7 @@ func (t *CrabTree) deleteEntry(n *Node, key int, pointer interface{}) {
 
 }
 
-func (t *CrabTree) Palm(Q []tree_api.Query, i int, num_threads int) {}
+func (t *CrabTree) Stage1(Q []tree_api.Query, i int, num_threads int, wg *sync.WaitGroup) {}
+func (t *CrabTree) Stage2(Q []tree_api.Query, i int, num_threads int)                     {}
+func (t *CrabTree) Stage3(Q []tree_api.Query, i int, num_threads int)                     {}
+func (t *CrabTree) Stage4(Q []tree_api.Query, i int, num_threads int)                     {}

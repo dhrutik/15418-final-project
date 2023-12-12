@@ -800,4 +800,7 @@ func (t *Tree) deleteEntry(n *Node, key int, pointer interface{}) {
 
 }
 
-func (t *Tree) Palm(Q []tree_api.Query, i int, num_threads int) {}
+func (t *Tree) Stage1(Q []tree_api.Query, i int, num_threads int, wg *sync.WaitGroup) {}
+func (t *Tree) Stage2(Q []tree_api.Query, i int, num_threads int)                     {}
+func (t *Tree) Stage3(Q []tree_api.Query, i int, num_threads int)                     {}
+func (t *Tree) Stage4(Q []tree_api.Query, i int, num_threads int)                     {}

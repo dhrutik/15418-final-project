@@ -900,14 +900,14 @@ func (t *LockFreeTree) deleteEntry(n *Node, key int, pointer interface{}) {
 // Evenly distributes queries across all threads, return slice corresponding to ith thread
 func (t *LockFreeTree) PartitionInput(Q []tree_api.Query, i int, num_threads int) []tree_api.Query {
 	num_queries := len(Q)
-	start := i + num_threads
+	start := i + num_threads - 1 // because will never have 0 threads
 	end := start + (num_queries / num_threads)
 	// TODO: CHECK THIS MATH, Ensure all queries are in some partition
 	res := Q[start:end]
-	fmt.Printf("In PartitionInput for %d threads, thread_id: %d", num_threads, i)
-	fmt.Printf("Queries:")
-	for _, q := range Q {
-		fmt.Printf("QueryMethod: %d, QueryKey: %d", q.Method, q.Key)
+	fmt.Printf("\nIn PartitionInput for %d threads, thread_id: %d\n", num_threads, i)
+	fmt.Printf("Queries:\n")
+	for _, q := range res {
+		fmt.Printf("res: QueryMethod: %d, QueryKey: %d\n", q.Method, q.Key)
 	}
 
 	return res
@@ -918,16 +918,17 @@ func (t *LockFreeTree) PartitionInput(Q []tree_api.Query, i int, num_threads int
 // }
 
 func (t *LockFreeTree) FindMultiple(Q []tree_api.Query) [](*Node) {
-	var res [](*Node)
-	print("len of res: %d", len(res))
-	// verbose := true // debugging purposes
+	res := [](*Node){}
+	fmt.Printf("b4 len of res: %d\n", len(res))
+	verbose := false // debugging purposes
 	for _, q := range Q {
+		// TODO: potentially need to remove q from Q once found, or mark as done (serviced query)
 		if q.Method == tree_api.MethodFind {
-			print("entering here??")
-			// key := q.Key
-			// node := t.findLeaf(key, verbose)
-			// append(res, node) // TODO: Check for errors
-			print("len of res: %d", len(res))
+			key := q.Key
+			node := t.findLeaf(key, verbose)
+			res = append(res, node) // TODO: Check for errors
+			q.Done = true           // Ensure this can actually be done in place like this
+			fmt.Printf("after len of res: %d\n", len(res))
 		} else {
 			continue
 		}
@@ -935,18 +936,29 @@ func (t *LockFreeTree) FindMultiple(Q []tree_api.Query) [](*Node) {
 	return res
 }
 
-func (t *LockFreeTree) Palm(Q []tree_api.Query, i int, num_threads int) {
+func (t *LockFreeTree) Stage1(Q []tree_api.Query, i int, num_threads int, wg *sync.WaitGroup) {
 	// Stage 1
 	Q_i := t.PartitionInput(Q, i, num_threads)
 	L_i := t.FindMultiple(Q_i)
+	fmt.Printf("printing after call to find multiple\n")
 	for _, l := range L_i {
+		fmt.Printf("Leaf: ")
 		for i = 0; i < l.NumKeys; i++ {
 			if verbose_output {
-				fmt.Printf("%d ", l.Pointers[i])
+				fmt.Printf("%d \n", l.Pointers[i])
 			}
 			fmt.Printf("%d ", l.Keys[i])
 		}
+		fmt.Printf("\n")
 	}
+	fmt.Printf("printing tree now...\n")
+	t.PrintTree()
+
+	defer wg.Done()
 
 	// t.Sync(i, num_threads)
 }
+
+func (t *LockFreeTree) Stage2(Q []tree_api.Query, i int, num_threads int) {}
+func (t *LockFreeTree) Stage3(Q []tree_api.Query, i int, num_threads int) {}
+func (t *LockFreeTree) Stage4(Q []tree_api.Query, i int, num_threads int) {}

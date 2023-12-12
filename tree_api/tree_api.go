@@ -15,6 +15,7 @@ const (
 type Query struct {
 	Method Method
 	Key    int
+	Done   bool
 }
 
 type BPTree interface {
@@ -24,5 +25,8 @@ type BPTree interface {
 	// PrintTree()
 	// FindAndPrint(key int, verbose bool)
 	// FindAndPrintRange(key_start, key_end int, verbose bool)
-	Palm(Q []Query, i int, num_threads int)
+	Stage1(Q []Query, i int, num_threads int, wg *sync.WaitGroup)
+	Stage2(Q []Query, i int, num_threads int)
+	Stage3(Q []Query, i int, num_threads int)
+	Stage4(Q []Query, i int, num_threads int)
 }

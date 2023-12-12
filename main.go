@@ -8,6 +8,7 @@ import (
 	"main/lock_free"
 	"main/seq_tree"
 	"main/tree_api"
+	"sync"
 	"time"
 )
 
@@ -59,15 +60,24 @@ func main() {
 	if FLAG_test_palm {
 		palmKeyCount := 5
 		lock_free_tree := lock_free.NewTree()
-		palmMaxThreadCount := 1
+		palmMaxThreadCount := 3
+
+		var wg1 sync.WaitGroup
 		// globalLockTrees := makeTreeList(maxThreadCount, global_lock_tree.NewTree)
 		// crabTrees := makeTreeList(maxThreadCount, crab.NewTree)
 		benchmark.InsertQueries(lock_free_tree, palmKeyCount, palmMaxThreadCount)
-		var queries = []tree_api.Query
-		for i := 0; i <= palmKeyCount; i++{
-			append(queries, tree_api.Query{tree_api.MethodFind, i})
+		queries := make([]tree_api.Query, 0)
+		for i := 0; i < palmKeyCount; i++ {
+			queries = append(queries, tree_api.Query{tree_api.MethodFind, i, false})
 		}
+		for i := 1; i <= palmMaxThreadCount; i++ {
+			wg1.Add(1) // Increment the counter for each goroutine
+			go lock_free_tree.Stage1(queries, i, palmMaxThreadCount)
+		}
+		wg1.Wait()
+		fmt.Println("All workers have completed.")
+
 		// Stage 1 Test
-		lock_free_tree.Palm(queries, 0, palmMaxThreadCount)
+		// benchmark.RunStage1(lock_free_tree, queries, palmKeyCount, palmMaxThreadCount)
 	}
 }
