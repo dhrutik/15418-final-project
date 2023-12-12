@@ -132,3 +132,39 @@ func RunDeleteBenchmark(tree tree_api.BPTree, numKeys int, threads int) (time.Du
 	fmt.Printf("Delete %d keys in %f seconds with %d threads, throughput: %f keys/s\n", numKeys, elapsedTime.Seconds(), threads, throughput)
 	return elapsedTime, throughput
 }
+
+/*************************Basic Lock-Free Tests******************************************************/
+func InsertQueries(tree tree_api.BPTree, numKeys int, threads int) (time.Duration, float64) {
+	done := make(chan bool)
+	numKeysPerThread := (numKeys + threads - 1) / threads
+	keys := makeShuffledKeysList(numKeys)
+	startTime := time.Now()
+	// insertedKeys := make([]bool, numKeys)
+	for i := 0; i < threads; i++ {
+		go func(index int) {
+			startIndex := index * numKeysPerThread
+			endIndex := startIndex + numKeysPerThread
+			if endIndex > numKeys {
+				endIndex = numKeys
+			}
+			if startIndex > numKeys {
+				startIndex = numKeys
+			}
+			insertKeys(tree, startIndex, endIndex, index, keys)
+			done <- true
+		}(i)
+	}
+	for doneCount := 0; doneCount < threads; doneCount++ {
+		<-done
+	}
+	// checkAllInserted(insertedKeys)
+	elapsedTime := time.Since(startTime)
+	throughput := float64(numKeys) / elapsedTime.Seconds()
+	fmt.Printf("Insert %d keys in %f seconds with %d threads, throughput: %f keys/s\n", numKeys, elapsedTime.Seconds(), threads, throughput)
+	return elapsedTime, throughput
+}
+
+// func RunStage1(tree tree_api.BPTree, numKeys int, threads int) (time.Duration, float64) {
+// 	// ASSERT tree is of type lock_free
+
+// }

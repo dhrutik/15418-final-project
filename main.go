@@ -5,6 +5,7 @@ import (
 	"main/benchmark"
 	"main/crab"
 	"main/global_lock_tree"
+	"main/lock_free"
 	"main/seq_tree"
 	"main/tree_api"
 	"time"
@@ -46,8 +47,27 @@ func main() {
 	globalLockTrees := makeTreeList(maxThreadCount, global_lock_tree.NewTree)
 	crabTrees := makeTreeList(maxThreadCount, crab.NewTree)
 
-	runBenchmark("Insert", benchmark.RunInsertBenchmark, seqTree, globalLockTrees, crabTrees, keyCount, maxThreadCount)
-	runBenchmark("Find", benchmark.RunFindBenchmark, seqTree, globalLockTrees, crabTrees, keyCount, maxThreadCount)
-	runBenchmark("Delete", benchmark.RunDeleteBenchmark, seqTree, globalLockTrees, crabTrees, keyCount, maxThreadCount)
+	FLAG_run_benchmarks := false
+	FLAG_test_palm := true
 
+	if FLAG_run_benchmarks {
+		runBenchmark("Insert", benchmark.RunInsertBenchmark, seqTree, globalLockTrees, crabTrees, keyCount, maxThreadCount)
+		runBenchmark("Find", benchmark.RunFindBenchmark, seqTree, globalLockTrees, crabTrees, keyCount, maxThreadCount)
+		runBenchmark("Delete", benchmark.RunDeleteBenchmark, seqTree, globalLockTrees, crabTrees, keyCount, maxThreadCount)
+	}
+
+	if FLAG_test_palm {
+		palmKeyCount := 5
+		lock_free_tree := lock_free.NewTree()
+		palmMaxThreadCount := 1
+		// globalLockTrees := makeTreeList(maxThreadCount, global_lock_tree.NewTree)
+		// crabTrees := makeTreeList(maxThreadCount, crab.NewTree)
+		benchmark.InsertQueries(lock_free_tree, palmKeyCount, palmMaxThreadCount)
+		var queries = []tree_api.Query
+		for i := 0; i <= palmKeyCount; i++{
+			append(queries, tree_api.Query{tree_api.MethodFind, i})
+		}
+		// Stage 1 Test
+		lock_free_tree.Palm(queries, 0, palmMaxThreadCount)
+	}
 }

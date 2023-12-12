@@ -56,3 +56,5 @@ func (t *GlobalLockTree) PrintLeaves() {
 	defer t.lock.Unlock()
 	t.tree.PrintLeaves()
 }
+
+func (t *GlobalLockTree) Palm(Q []tree_api.Query, i int, num_threads int) {}

@@ -1,5 +1,7 @@
 package seq_tree
 
+// package main
+
 // From https://github.com/collinglass/bptree
 import (
 	"errors"
@@ -797,3 +799,5 @@ func (t *Tree) deleteEntry(n *Node, key int, pointer interface{}) {
 	}
 
 }
+
+func (t *Tree) Palm(Q []tree_api.Query, i int, num_threads int) {}
