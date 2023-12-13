@@ -8,4 +8,4 @@ package lock_free
 // 	"sync"
 // )
 
-func (t *LockFreeTree) Stage4(finalModList [](map[*Node]([]Modification))) {}
+func (t *LockFreeTree) Stage4(finalModList [](map[*Node]([]Modification)), palmMaxThreadCount int) {}

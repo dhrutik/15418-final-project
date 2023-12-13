@@ -8,6 +8,6 @@ package lock_free
 // "sync"
 // )
 
-func (t *LockFreeTree) Stage3(sharedModLists [](map[*Node]([]Modification))) [](map[*Node]([]Modification)) {
+func (t *LockFreeTree) Stage3(sharedModLists [](map[*Node]([]Modification)), palmMaxThreadCount int) [](map[*Node]([]Modification)) {
 	return nil
 }

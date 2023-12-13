@@ -8,6 +8,6 @@ import (
 	// "sync"
 )
 
-func (t *LockFreeTree) Stage2(sharedLeafData [][]*Node) ([](map[*Node]([]Modification)), []*tree_api.Record) {
+func (t *LockFreeTree) Stage2(sharedLeafData [][]*Node, palmMaxThreadCount int) ([](map[*Node]([]Modification)), []*tree_api.Record) {
 	return nil, nil
 }
