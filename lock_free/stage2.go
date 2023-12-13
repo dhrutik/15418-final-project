@@ -47,14 +47,50 @@ func (t *LockFreeTree) RedistributeWorkLeaves(index int, sharedLeafData [][]*Nod
 	return L_i_prime
 }
 
-func (t *LockFreeTree) ResolveHazards(L_i_prime []*Node, queries []tree_api.Query) ([][]*tree_api.Record, map[*Node]([]tree_api.Query)) {
-	return nil, nil
+func (t *LockFreeTree) ResolveHazards(L_i_prime []*Node, queries []tree_api.Query) ([]*tree_api.Record, map[*Node]([]tree_api.Query)) {
+	res := make([]*tree_api.Record, 0)
+	findQueries := make([]tree_api.Query, 0)
+	O_L_i := make(map[*Node]([]tree_api.Query))
+
+	// Extract queries relevant to this (index-th) thread
+	for _, q := range queries {
+		// Iterate over *my* leaves
+		for _, node := range L_i_prime {
+			if slices.Contains(node.Keys, q.Key) {
+				// Found a query that affects one of this thread's leaves
+				if q.Method == tree_api.MethodFind {
+					findQueries = append(findQueries, q) // to be serviced here
+					break
+				} else if q.Method == tree_api.MethodInsert || q.Method == tree_api.MethodDelete {
+					// Add other queries into map, to be serviced later
+					val, ok := O_L_i[node]
+					if !ok {
+						val := make([]tree_api.Query, 0)
+						O_L_i[node] = append(val, q)
+					} else {
+						O_L_i[node] = append(val, q)
+					}
+					break
+				}
+			}
+		}
+	}
+	// Service appropriate find queries
+	for _, q := range findQueries {
+		val, err := t.Find(q.Key, false)
+		if err == nil {
+			res = append(res, val)
+		}
+	}
+	return res, O_L_i
 }
 
 func (t *LockFreeTree) Stage2Logic(i int, num_threads int, sharedLeafData [][]*Node, queries []tree_api.Query, R [][]*tree_api.Record) /*[]*Node*/ map[*Node]([]Modification) {
 	// Redistribute Work
 	L_i_prime := t.RedistributeWorkLeaves(i, sharedLeafData)
-	t.ResolveHazards(L_i_prime, queries)
+	res, O_l_i := t.ResolveHazards(L_i_prime, queries)
+	// Update shared results slice
+	R[i] = res
 	// return L_i_prime
 	return nil
 	// Modify leaves independently
