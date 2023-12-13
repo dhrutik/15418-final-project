@@ -737,7 +737,7 @@ func removeEntryFromNode(n *Node, key int, pointer interface{}) *Node {
 	}
 
 	i = 0
-	for n.Pointers[i] != pointer {
+	for i < len(n.Pointers) && n.Pointers[i] != pointer {
 		i += 1
 	}
 	for i += 1; i < num_pointers; i++ {
@@ -932,6 +932,9 @@ func (t *LockFreeTree) Palm(palmKeyCount int, palmMaxThreadCount int) {
 	for i := 0; i < palmKeyCount; i++ {
 		record, _ := makeRecord([]byte("hello"))
 		queries = append(queries, tree_api.Query{tree_api.MethodInsert, i, false, record})
+	}
+	for i := 0; i < palmKeyCount; i++ {
+		queries = append(queries, tree_api.Query{tree_api.MethodDelete, i, false, nil})
 	}
 	fmt.Println("Starting Palm stage 1")
 	sharedLeafData := t.Stage1(queries, palmMaxThreadCount) // L
