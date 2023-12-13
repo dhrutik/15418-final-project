@@ -37,7 +37,26 @@ type Node struct {
 	lock     sync.Mutex
 }
 
+type ModType int
+
+const (
+	Split ModType = iota
+	Underflow
+)
+
+type SplitData struct {
+	Parent   *Node // to be inserted into
+	NewNodes []*Node
+}
+type UnderflowData struct {
+	Parent    *Node
+	ChildKeys []int // keys of descendants to be re-inserted
+}
+
 type Modification struct {
+	ModType       ModType
+	SplitData     SplitData
+	UnderflowData UnderflowData
 }
 
 // type Node = tree_api.Node
@@ -903,7 +922,6 @@ func (t *LockFreeTree) deleteEntry(n *Node, key int, pointer interface{}) {
 }
 
 func (t *LockFreeTree) Palm(palmKeyCount int, palmMaxThreadCount int) {
-	// var wg1 sync.WaitGroup
 	queries := make([]tree_api.Query, 0)
 	for i := 0; i < palmKeyCount; i++ {
 		queries = append(queries, tree_api.Query{tree_api.MethodFind, i, false})
@@ -917,36 +935,4 @@ func (t *LockFreeTree) Palm(palmKeyCount int, palmMaxThreadCount int) {
 	if false {
 		print(R)
 	}
-
-	// Run Stage 1
-	// sharedLeafData := make([][]*Node, palmMaxThreadCount+1)
-	// for i := 1; i <= palmMaxThreadCount; i++ {
-	// 	sharedLeafData[i] = make([]*Node, 0)
-	// }
-	// for i := 1; i <= palmMaxThreadCount; i++ {
-	// 	wg1.Add(1) // Increment the counter for each goroutine
-	// 	go t.modifySharedLeaves(i, sharedLeafData, queries, palmMaxThreadCount, &wg1)
-	// 	// go lock_free_tree.Stage1(queries, i, palmMaxThreadCount, &wg1)
-	// }
-	// // Sync
-	// wg1.Wait()
-	// fmt.Println("All workers have completed.")
-	// fmt.Println("Printing sharedLeafData vals")
-	// for idx, L_i := range sharedLeafData {
-	// 	fmt.Printf("index: %d\n", idx)
-	// 	for _, l := range L_i {
-	// 		fmt.Printf("Leaf: ")
-	// 		for i := 0; i < l.NumKeys; i++ {
-	// 			if verbose_output {
-	// 				fmt.Printf("%d \n", l.Pointers[i])
-	// 			}
-	// 			fmt.Printf("%d ", l.Keys[i])
-	// 		}
-	// 		fmt.Printf("\n")
-	// 	}
-	// }
 }
-
-// func (t *LockFreeTree) Stage2(Q []tree_api.Query, i int, num_threads int) {}
-// func (t *LockFreeTree) Stage3(Q []tree_api.Query, i int, num_threads int) {}
-// func (t *LockFreeTree) Stage4(Q []tree_api.Query, i int, num_threads int) {}
