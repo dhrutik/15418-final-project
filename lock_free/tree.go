@@ -42,21 +42,24 @@ type ModType int
 const (
 	Split ModType = iota
 	Underflow
+	NoMod
 )
 
 type SplitData struct {
-	Parent   *Node // to be inserted into
-	NewNodes []*Node
+	NewKeys  []int
+	NewNodes []interface{}
 }
 type UnderflowData struct {
-	Parent    *Node
-	ChildKeys []int // keys of descendants to be re-inserted
+	ChildKeys []int
+	ChildPtrs []interface{}
 }
 
 type Modification struct {
 	ModType       ModType
-	SplitData     SplitData
-	UnderflowData UnderflowData
+	Parent        *Node // Node to be modified
+	SplitData     *SplitData
+	UnderflowData *UnderflowData
+	OrphanedKeys  []int // keys of descendants to be re-inserted
 }
 
 // type Node = tree_api.Node
