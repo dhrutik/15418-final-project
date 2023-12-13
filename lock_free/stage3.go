@@ -2,15 +2,9 @@ package lock_free
 
 import "sync"
 
-func assert(condition bool) {
-	if !condition {
-		panic("assertion failed")
-	}
-}
-
-func (t *LockFreeTree) getUpdatedModList(sharedModLists [](map[*Node]([]Modification)), threadId int) map[*Node]([]Modification) {
+func (t *LockFreeTree) getUpdatedModList(sharedModLists [](map[*Node]([]*Modification)), threadId int) map[*Node]([]*Modification) {
 	previousThreadNodes := make(map[*Node]bool)
-	updatedModList := make(map[*Node]([]Modification))
+	updatedModList := make(map[*Node]([]*Modification))
 	for i := 0; i < threadId; i++ {
 		for node, _ := range sharedModLists[i] {
 			previousThreadNodes[node] = true
@@ -24,32 +18,6 @@ func (t *LockFreeTree) getUpdatedModList(sharedModLists [](map[*Node]([]Modifica
 	return updatedModList
 }
 
-func bigSplit(node *Node) ([]int, []interface{}) {
-	newKeys := make([]int, 0)
-	newNodes := make([]interface{}, 0)
-	newNodeCount := ((node.NumKeys + minOrder - 1) / minOrder) - 1
-	assert(newNodeCount > 0)
-	currIndex := minOrder
-	for nodeNum := 1; nodeNum < newNodeCount; nodeNum++ {
-		newNode, _ := makeNode()
-		newNode.Parent = node.Parent
-		newNode.NumKeys = minOrder - 1
-		for j := 0; j < minOrder ; j++ {
-			newNode.Keys[j] = node.Keys[j+currIndex]
-		}
-		for j := 0; j < minOrder; j++ {
-			newNode.Pointers[j] = node.Pointers[j+minOrder]
-		}
-		newKeys = append(newKeys, newNode.Keys[nodeNum * minOrder])
-		newNodes = append(newNodes, newNode)
-		currIndex += minOrder
-	}
-	node.NumKeys = minOrder - 1
-	node.Keys = node.Keys[:node.NumKeys]
-	node.Pointers = node.Pointers[:node.NumKeys+1]
-	return newKeys, newNodes
-}
-
 func getLeafKeys(node *Node) []int {
 	if node.IsLeaf {
 		return node.Keys
@@ -61,7 +29,7 @@ func getLeafKeys(node *Node) []int {
 	return leafKeys
 }
 
-func (t *LockFreeTree) modifyInternalNode(node *Node, mod Modification) *Modification {
+func (t *LockFreeTree) modifyInternalNode(node *Node, mod *Modification) *Modification {
 	if mod.ModType == Split {
 		for i, updateKey := range mod.SplitData.NewKeys {
 			left_index := getLeftIndex(node, mod.SplitData.NewNodes[i].(*Node))
@@ -88,14 +56,14 @@ func (t *LockFreeTree) modifyInternalNode(node *Node, mod Modification) *Modific
 	return &Modification{NoMod, node.Parent, nil, nil, mod.OrphanedKeys}
 }
 
-func (t *LockFreeTree) stage3Thread(sharedModLists [](map[*Node]([]Modification)), newSharedModLists [](map[*Node]([]Modification)), threadId int, depth int, wg *sync.WaitGroup) {
+func (t *LockFreeTree) stage3Thread(sharedModLists [](map[*Node]([]*Modification)), newSharedModLists [](map[*Node]([]*Modification)), threadId int, depth int, wg *sync.WaitGroup) {
 	for d := 1; d < depth; d++ {
 		updatedModList := t.getUpdatedModList(sharedModLists, threadId)
 		for node, modList := range updatedModList {
 			for _, mod := range modList {
 				newMod := t.modifyInternalNode(node, mod)
 				if newMod != nil {
-					newSharedModLists[threadId][newMod.Parent] = append(newSharedModLists[threadId][newMod.Parent], *newMod)
+					newSharedModLists[threadId][newMod.Parent] = append(newSharedModLists[threadId][newMod.Parent], newMod)
 				}
 			}
 		}
@@ -103,11 +71,11 @@ func (t *LockFreeTree) stage3Thread(sharedModLists [](map[*Node]([]Modification)
 	}
 }
 
-func (t *LockFreeTree) Stage3(sharedModLists [](map[*Node]([]Modification)), palmMaxThreadCount int) [](map[*Node]([]Modification)) {
+func (t *LockFreeTree) Stage3(sharedModLists [](map[*Node]([]*Modification)), palmMaxThreadCount int) [](map[*Node]([]*Modification)) {
 	depth := t.height()
 	// spin off threads first, passing them sharedModLists and thread id
 	wg := sync.WaitGroup{}
-	newSharedModLists := make([](map[*Node]([]Modification)), palmMaxThreadCount)
+	newSharedModLists := make([](map[*Node]([]*Modification)), palmMaxThreadCount)
 	for i := 0; i < palmMaxThreadCount; i++ {
 		go t.stage3Thread(sharedModLists, newSharedModLists, i, depth, &wg)
 	}

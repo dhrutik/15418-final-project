@@ -8,7 +8,7 @@ package lock_free
 // 	"sync"
 // )
 
-func (t *LockFreeTree) Stage4(finalModList [](map[*Node]([]Modification)), palmMaxThreadCount int) {
+func (t *LockFreeTree) Stage4(finalModList [](map[*Node]([]*Modification)), palmMaxThreadCount int) {
 	orphanedKeys := make([]int, 0)
 	for _, modMap := range finalModList {
 		for node, modList := range modMap {
