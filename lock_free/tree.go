@@ -42,21 +42,24 @@ type ModType int
 const (
 	Split ModType = iota
 	Underflow
+	NoMod
 )
 
 type SplitData struct {
-	Parent   *Node // to be inserted into
-	NewNodes []*Node
+	NewKeys  []int
+	NewNodes []interface{}
 }
 type UnderflowData struct {
-	Parent    *Node
-	ChildKeys []int // keys of descendants to be re-inserted
+	ChildKeys []int
+	ChildPtrs []interface{}
 }
 
 type Modification struct {
 	ModType       ModType
-	SplitData     SplitData
-	UnderflowData UnderflowData
+	Parent        *Node // Node to be modified
+	SplitData     *SplitData
+	UnderflowData *UnderflowData
+	OrphanedKeys  []int // keys of descendants to be re-inserted
 }
 
 // type Node = tree_api.Node
@@ -924,11 +927,11 @@ func (t *LockFreeTree) deleteEntry(n *Node, key int, pointer interface{}) {
 func (t *LockFreeTree) Palm(palmKeyCount int, palmMaxThreadCount int) {
 	queries := make([]tree_api.Query, 0)
 	for i := 0; i < palmKeyCount; i++ {
-		queries = append(queries, tree_api.Query{tree_api.MethodFind, i, false})
+		queries = append(queries, tree_api.Query{tree_api.MethodFind, i, false, nil})
 	}
 
-	sharedLeafData := t.Stage1(queries, palmMaxThreadCount)           // L
-	sharedModLists, R := t.Stage2(sharedLeafData, palmMaxThreadCount) // M
+	sharedLeafData := t.Stage1(queries, palmMaxThreadCount)                    // L
+	sharedModLists, R := t.Stage2(sharedLeafData, palmMaxThreadCount, queries) // M
 	finalModList := t.Stage3(sharedModLists, palmMaxThreadCount)
 	t.Stage4(finalModList, palmMaxThreadCount)
 
