@@ -41,5 +41,5 @@ func (t *LockFreeTree) Stage4(finalModList [](map[*Node]([]*Modification)), palm
 	} else if t.Root.NumKeys == 0 {
 		t.Root = nil
 	}
-	defer t.Palm(len(orphanedKeys), palmMaxThreadCount)
+	// defer t.Palm(len(orphanedKeys), palmMaxThreadCount)
 }

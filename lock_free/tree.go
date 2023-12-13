@@ -929,6 +929,10 @@ func (t *LockFreeTree) Palm(palmKeyCount int, palmMaxThreadCount int) {
 	for i := 0; i < palmKeyCount; i++ {
 		queries = append(queries, tree_api.Query{tree_api.MethodFind, i, false, nil})
 	}
+	for i := 0; i < palmKeyCount; i++ {
+		record, _ := makeRecord([]byte("hello"))
+		queries = append(queries, tree_api.Query{tree_api.MethodInsert, i, false, record})
+	}
 	fmt.Println("Starting Palm stage 1")
 	sharedLeafData := t.Stage1(queries, palmMaxThreadCount) // L
 	fmt.Println("Finished Palm stage 1")
