@@ -47,30 +47,36 @@ func (t *LockFreeTree) RedistributeWorkLeaves(index int, sharedLeafData [][]*Nod
 	return L_i_prime
 }
 
-func (t *LockFreeTree) Stage2Logic(i int, num_threads int, sharedLeafData [][]*Node, R [][]*tree_api.Record) []*Node /*map[*Node]([][]Modification)*/ {
+func (t *LockFreeTree) ResolveHazards(L_i_prime []*Node, queries []tree_api.Query) ([][]*tree_api.Record, map[*Node]([]tree_api.Query)) {
+	return nil, nil
+}
+
+func (t *LockFreeTree) Stage2Logic(i int, num_threads int, sharedLeafData [][]*Node, queries []tree_api.Query, R [][]*tree_api.Record) /*[]*Node*/ map[*Node]([]Modification) {
 	// Redistribute Work
 	L_i_prime := t.RedistributeWorkLeaves(i, sharedLeafData)
-	return L_i_prime
+	t.ResolveHazards(L_i_prime, queries)
+	// return L_i_prime
+	return nil
 	// Modify leaves independently
 }
 
-func (t *LockFreeTree) modifySharedModLists(index int, sharedLeafData [][]*Node, sharedModLists [](map[*Node]([]Modification)), R [][]*tree_api.Record, palmMaxThreadCount int, wg *sync.WaitGroup, testing [][]*Node) {
+func (t *LockFreeTree) modifySharedModLists(index int, sharedLeafData [][]*Node, sharedModLists [](map[*Node]([]Modification)), queries []tree_api.Query, R [][]*tree_api.Record, palmMaxThreadCount int, wg *sync.WaitGroup /*, testing [][]*Node*/) {
 	defer wg.Done()
 	// fmt.Printf("in modsharedlists index: %d\n", index)
-	res := t.Stage2Logic(index, palmMaxThreadCount, sharedLeafData, R)
-	testing[index] = res
-	// sharedModLists[index] = res
+	res := t.Stage2Logic(index, palmMaxThreadCount, sharedLeafData, queries, R)
+	// testing[index] = res
+	sharedModLists[index] = res
 }
 
-func (t *LockFreeTree) Stage2(sharedLeafData [][]*Node, palmMaxThreadCount int) ([](map[*Node]([]Modification)), [][]*tree_api.Record) {
+func (t *LockFreeTree) Stage2(sharedLeafData [][]*Node, palmMaxThreadCount int, queries []tree_api.Query) ([](map[*Node]([]Modification)), [][]*tree_api.Record) {
 	fmt.Printf("Starting Stage 2\n")
 	var wg2 sync.WaitGroup
-	dbg := true
+	dbg := false
 
-	testing := make([][]*Node, palmMaxThreadCount)
-	for i := 0; i < palmMaxThreadCount; i++ {
-		testing[i] = make([]*Node, 0)
-	}
+	// testing := make([][]*Node, palmMaxThreadCount)
+	// for i := 0; i < palmMaxThreadCount; i++ {
+	// 	testing[i] = make([]*Node, 0)
+	// }
 
 	// Set up
 	sharedModLists := make([]map[*Node]([]Modification), palmMaxThreadCount)
@@ -85,14 +91,15 @@ func (t *LockFreeTree) Stage2(sharedLeafData [][]*Node, palmMaxThreadCount int) 
 	// Do threads
 	for i := 0; i < palmMaxThreadCount; i++ {
 		wg2.Add(1) // Increment the counter for each goroutine
-		go t.modifySharedModLists(i, sharedLeafData, sharedModLists, R, palmMaxThreadCount, &wg2, testing)
+		go t.modifySharedModLists(i, sharedLeafData, sharedModLists, queries, R, palmMaxThreadCount, &wg2 /*, testing*/)
 	}
 	wg2.Wait()
 	fmt.Println("All workers have completed Stage 2.")
 
 	if dbg {
-		fmt.Println("Printing testing redistributed leaves vals")
-		for idx, L_i := range testing {
+		// fmt.Println("Printing testing redistributed leaves vals")
+		// for idx, L_i := range testing {
+		for idx, L_i := range sharedLeafData {
 			fmt.Printf("index: %d\n", idx)
 			for _, l := range L_i {
 				fmt.Printf("Leaf: ")

@@ -927,8 +927,8 @@ func (t *LockFreeTree) Palm(palmKeyCount int, palmMaxThreadCount int) {
 		queries = append(queries, tree_api.Query{tree_api.MethodFind, i, false})
 	}
 
-	sharedLeafData := t.Stage1(queries, palmMaxThreadCount)           // L
-	sharedModLists, R := t.Stage2(sharedLeafData, palmMaxThreadCount) // M
+	sharedLeafData := t.Stage1(queries, palmMaxThreadCount)                    // L
+	sharedModLists, R := t.Stage2(sharedLeafData, palmMaxThreadCount, queries) // M
 	finalModList := t.Stage3(sharedModLists, palmMaxThreadCount)
 	t.Stage4(finalModList, palmMaxThreadCount)
 
