@@ -23,27 +23,23 @@ func (t *LockFreeTree) PartitionInput(Q []tree_api.Query, i int, num_threads int
 	return res
 }
 
-// func printNodeSlice(s [](*Node)) {
-// 	fmt.Printf("key=%d\n", s.)
-// }
-
 func (t *LockFreeTree) FindMultiple(Q []tree_api.Query) [](*Node) {
 	res := [](*Node){}
 	fmt.Printf("b4 len of res: %d\n", len(res))
 	verbose := false // debugging purposes
 	for _, q := range Q {
 		// TODO: potentially need to remove q from Q once found, or mark as done (serviced query)
-		if q.Method == tree_api.MethodFind {
-			key := q.Key
-			node := t.findLeaf(key, verbose)
-			if !slices.Contains(res, node) {
-				res = append(res, node) // TODO: Check for errors
-			}
-			q.Done = true // Ensure this can actually be done in place like this
-			fmt.Printf("after len of res: %d\n", len(res))
-		} else {
-			continue
+		// if q.Method == tree_api.MethodFind {
+		key := q.Key
+		node := t.findLeaf(key, verbose)
+		if !slices.Contains(res, node) {
+			res = append(res, node) // TODO: Check for errors
 		}
+		// q.Done = true // Ensure this can actually be done in place like this
+		fmt.Printf("after len of res: %d\n", len(res))
+		// } else {
+		// 	continue
+		// }
 	}
 	return res
 }
@@ -52,24 +48,7 @@ func (t *LockFreeTree) Stage1Logic(Q []tree_api.Query, i int, num_threads int) [
 	// Stage 1
 	Q_i := t.PartitionInput(Q, i, num_threads)
 	L_i := t.FindMultiple(Q_i)
-	// fmt.Printf("stage 1 done for thread %d\n", i)
-	// for _, l := range L_i {
-	// 	fmt.Printf("tid %d Leaf: ", i)
-	// 	for i = 0; i < l.NumKeys; i++ {
-	// 		if verbose_output {
-	// 			fmt.Printf("%d \n", l.Pointers[i])
-	// 		}
-	// 		fmt.Printf("%d ", l.Keys[i])
-	// 	}
-	// 	fmt.Printf("\n")
-	// }
 	return L_i
-	// fmt.Printf("printing tree now...\n")
-	// t.PrintTree()
-
-	// defer wg.Done()
-
-	// t.Sync(i, num_threads)
 }
 
 func (t *LockFreeTree) modifySharedLeaves(index int, sharedLeafData [][]*Node, queries []tree_api.Query, palmMaxThreadCount int, wg *sync.WaitGroup) {
