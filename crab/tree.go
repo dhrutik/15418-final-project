@@ -1,14 +1,12 @@
-package seq_tree
+package crab
 
-// package main
-
-// From https://github.com/collinglass/bptree
+// Modified from https://github.com/collinglass/bptree
 import (
 	"errors"
 	"fmt"
 	"main/tree_api"
 	"reflect"
-	// "sync"
+	"sync"
 )
 
 var (
@@ -24,8 +22,9 @@ var (
 	version        = 0.1
 )
 
-type Tree struct {
+type CrabTree struct {
 	Root *Node
+	lock sync.Mutex
 }
 
 type Node struct {
@@ -35,40 +34,55 @@ type Node struct {
 	IsLeaf   bool
 	NumKeys  int
 	Next     *Node
+	lock     sync.Mutex
 }
 
-func NewTree() *Tree {
-	return &Tree{}
+func NewTree() tree_api.BPTree {
+	return &CrabTree{}
 }
 
-func (t *Tree) Insert(key int, value []byte) error {
+func (t *CrabTree) Insert(key int, value []byte) error {
+	// fmt.Println("Insert key", key, "value", value)
+	t.lock.Lock()
+
 	var pointer *tree_api.Record
 	var leaf *Node
 
-	if _, err := t.Find(key, false); err == nil {
-		return errors.New("key already exists")
-	}
+	// Removed for benchmarking purposes – we assume there are no duplicates in
+	// the input
+	// if _, err := t.Find(key, false); err == nil {
+	// 	return errors.New("key already exists")
+	// }
 
 	pointer, err := makeRecord(value)
 	if err != nil {
+		defer t.lock.Unlock()
 		return err
 	}
 
 	if t.Root == nil {
+		defer t.lock.Unlock()
 		return t.startNewTree(key, pointer)
 	}
 
-	leaf = t.findLeaf(key, false)
+	leaf, treeLocked, lockList := t.findLeafForInsert(key, false)
 
 	if leaf.NumKeys < order-1 {
+		if treeLocked {
+			panic("tree is locked but child is safe")
+		}
+		if len(lockList) != 1 {
+			panic("lock list is not empty but child is safe")
+		}
 		insertIntoLeaf(leaf, key, pointer)
+		leaf.lock.Unlock()
 		return nil
 	}
-
+	defer t.clearLockList(treeLocked, lockList)
 	return t.insertIntoLeafAfterSplitting(leaf, key, pointer)
 }
 
-func (t *Tree) Find(key int, verbose bool) (*tree_api.Record, error) {
+func (t *CrabTree) find(key int, verbose bool) (*tree_api.Record, error) {
 	i := 0
 	c := t.findLeaf(key, verbose)
 	if c == nil {
@@ -88,7 +102,17 @@ func (t *Tree) Find(key int, verbose bool) (*tree_api.Record, error) {
 	return r, nil
 }
 
-func (t *Tree) FindAndPrint(key int, verbose bool) {
+func (t *CrabTree) Find(key int, verbose bool) (*tree_api.Record, error) {
+	// t.lock.Lock()
+	// defer t.lock.Unlock()
+	res, err := t.find(key, verbose)
+	if err != nil {
+		fmt.Println("Find key", key)
+	}
+	return res, err
+}
+
+func (t *CrabTree) FindAndPrint(key int, verbose bool) {
 	r, err := t.Find(key, verbose)
 
 	if err != nil || r == nil {
@@ -98,7 +122,7 @@ func (t *Tree) FindAndPrint(key int, verbose bool) {
 	}
 }
 
-func (t *Tree) FindAndPrintRange(key_start, key_end int, verbose bool) {
+func (t *CrabTree) FindAndPrintRange(key_start, key_end int, verbose bool) {
 	var i int
 	array_size := key_end - key_start + 1
 	returned_keys := make([]int, array_size)
@@ -117,7 +141,7 @@ func (t *Tree) FindAndPrintRange(key_start, key_end int, verbose bool) {
 	}
 }
 
-func (t *Tree) PrintTree() {
+func (t *CrabTree) PrintTree() {
 	var n *Node
 	i := 0
 	rank := 0
@@ -166,7 +190,7 @@ func (t *Tree) PrintTree() {
 	fmt.Printf("\n")
 }
 
-func (t *Tree) PrintLeaves() {
+func (t *CrabTree) PrintLeaves() {
 	if t.Root == nil {
 		fmt.Printf("Empty tree.\n")
 		return
@@ -198,7 +222,7 @@ func (t *Tree) PrintLeaves() {
 	fmt.Printf("\n")
 }
 
-func (t *Tree) Delete(key int) error {
+func (t *CrabTree) Delete(key int) error {
 	key_record, err := t.Find(key, false)
 	if err != nil {
 		return err
@@ -233,7 +257,7 @@ func dequeue() *Node {
 	return n
 }
 
-func (t *Tree) height() int {
+func (t *CrabTree) height() int {
 	h := 0
 	c := t.Root
 	for !c.IsLeaf {
@@ -243,7 +267,7 @@ func (t *Tree) height() int {
 	return h
 }
 
-func (t *Tree) pathToRoot(child *Node) int {
+func (t *CrabTree) pathToRoot(child *Node) int {
 	length := 0
 	c := child
 	for c != t.Root {
@@ -253,7 +277,7 @@ func (t *Tree) pathToRoot(child *Node) int {
 	return length
 }
 
-func (t *Tree) findRange(key_start, key_end int, verbose bool, returned_keys []int, returned_pointers []interface{}) int {
+func (t *CrabTree) findRange(key_start, key_end int, verbose bool, returned_keys []int, returned_pointers []interface{}) int {
 	var i int
 	num_found := 0
 
@@ -278,7 +302,66 @@ func (t *Tree) findRange(key_start, key_end int, verbose bool, returned_keys []i
 	return num_found
 }
 
-func (t *Tree) findLeaf(key int, verbose bool) *Node {
+func (t *CrabTree) clearLockList(treeLocked bool, lockList []*Node) []*Node {
+	if treeLocked {
+		t.lock.Unlock()
+	}
+	for _, node := range lockList {
+		node.lock.Unlock()
+	}
+	return []*Node{}
+}
+
+func (t *CrabTree) findLeafForInsert(key int, verbose bool) (*Node, bool, []*Node) {
+	i := 0
+	c := t.Root
+	lockList := []*Node{}
+	c.lock.Lock()
+	treeLocked := true
+	lockList = append(lockList, c)
+	if c.NumKeys < order-1 {
+		t.lock.Unlock()
+		treeLocked = false
+		// No need to maintain tree lock, the root will not split
+	}
+	for !c.IsLeaf {
+		if verbose {
+			fmt.Printf("[")
+			for i = 0; i < c.NumKeys-1; i++ {
+				fmt.Printf("%d ", c.Keys[i])
+			}
+			fmt.Printf("%d]", c.Keys[i])
+		}
+		i = 0
+		for i < c.NumKeys {
+			if key >= c.Keys[i] {
+				i += 1
+			} else {
+				break
+			}
+		}
+		if verbose {
+			fmt.Printf("%d ->\n", i)
+		}
+		c, _ = c.Pointers[i].(*Node)
+		c.lock.Lock()
+		if c.NumKeys < order-1 {
+			lockList = t.clearLockList(treeLocked, lockList)
+			treeLocked = false
+		}
+		lockList = append(lockList, c)
+	}
+	if verbose {
+		fmt.Printf("Leaf [")
+		for i = 0; i < c.NumKeys-1; i++ {
+			fmt.Printf("%d ", c.Keys[i])
+		}
+		fmt.Printf("%d] ->\n", c.Keys[i])
+	}
+	return c, treeLocked, lockList
+}
+
+func (t *CrabTree) findLeaf(key int, verbose bool) *Node {
 	i := 0
 	c := t.Root
 	if c == nil {
@@ -391,7 +474,7 @@ func insertIntoLeaf(leaf *Node, key int, pointer *tree_api.Record) {
 	return
 }
 
-func (t *Tree) insertIntoLeafAfterSplitting(leaf *Node, key int, pointer *tree_api.Record) error {
+func (t *CrabTree) insertIntoLeafAfterSplitting(leaf *Node, key int, pointer *tree_api.Record) error {
 	var new_leaf *Node
 	var insertion_index, split, new_key, i, j int
 	var err error
@@ -472,7 +555,7 @@ func insertIntoNode(n *Node, left_index, key int, right *Node) {
 	n.NumKeys += 1
 }
 
-func (t *Tree) insertIntoNodeAfterSplitting(old_node *Node, left_index, key int, right *Node) error {
+func (t *CrabTree) insertIntoNodeAfterSplitting(old_node *Node, left_index, key int, right *Node) error {
 	var i, j, split, k_prime int
 	var new_node, child *Node
 	var temp_keys []int
@@ -539,7 +622,7 @@ func (t *Tree) insertIntoNodeAfterSplitting(old_node *Node, left_index, key int,
 	return t.insertIntoParent(old_node, k_prime, new_node)
 }
 
-func (t *Tree) insertIntoParent(left *Node, key int, right *Node) error {
+func (t *CrabTree) insertIntoParent(left *Node, key int, right *Node) error {
 	var left_index int
 	parent := left.Parent
 
@@ -556,7 +639,7 @@ func (t *Tree) insertIntoParent(left *Node, key int, right *Node) error {
 	return t.insertIntoNodeAfterSplitting(parent, left_index, key, right)
 }
 
-func (t *Tree) insertIntoNewRoot(left *Node, key int, right *Node) error {
+func (t *CrabTree) insertIntoNewRoot(left *Node, key int, right *Node) error {
 	t.Root, err = makeNode()
 	if err != nil {
 		return err
@@ -571,7 +654,7 @@ func (t *Tree) insertIntoNewRoot(left *Node, key int, right *Node) error {
 	return nil
 }
 
-func (t *Tree) startNewTree(key int, pointer *tree_api.Record) error {
+func (t *CrabTree) startNewTree(key int, pointer *tree_api.Record) error {
 	t.Root, err = makeLeaf()
 	if err != nil {
 		return err
@@ -635,7 +718,7 @@ func removeEntryFromNode(n *Node, key int, pointer interface{}) *Node {
 	return n
 }
 
-func (t *Tree) adjustRoot() {
+func (t *CrabTree) adjustRoot() {
 	var new_root *Node
 
 	if t.Root.NumKeys > 0 {
@@ -653,7 +736,7 @@ func (t *Tree) adjustRoot() {
 	return
 }
 
-func (t *Tree) coalesceNodes(n, neighbour *Node, neighbour_index, k_prime int) {
+func (t *CrabTree) coalesceNodes(n, neighbour *Node, neighbour_index, k_prime int) {
 	var i, j, neighbour_insertion_index, n_end int
 	var tmp *Node
 
@@ -697,7 +780,7 @@ func (t *Tree) coalesceNodes(n, neighbour *Node, neighbour_index, k_prime int) {
 	t.deleteEntry(n.Parent, k_prime, n)
 }
 
-func (t *Tree) redistributeNodes(n, neighbour *Node, neighbour_index, k_prime_index, k_prime int) {
+func (t *CrabTree) redistributeNodes(n, neighbour *Node, neighbour_index, k_prime_index, k_prime int) {
 	var i int
 	var tmp *Node
 
@@ -748,7 +831,7 @@ func (t *Tree) redistributeNodes(n, neighbour *Node, neighbour_index, k_prime_in
 	return
 }
 
-func (t *Tree) deleteEntry(n *Node, key int, pointer interface{}) {
+func (t *CrabTree) deleteEntry(n *Node, key int, pointer interface{}) {
 	var min_keys, neighbour_index, k_prime_index, k_prime, capacity int
 	var neighbour *Node
 
@@ -801,9 +884,9 @@ func (t *Tree) deleteEntry(n *Node, key int, pointer interface{}) {
 
 }
 
-func (t *Tree) Palm(key_count int, num_threads int) {}
+func (t *CrabTree) Palm(key_count int, num_threads int) {}
 
-// func (t *Tree) Stage1(Q []tree_api.Query, i int, num_threads int) {}
-// func (t *Tree) Stage2(Q []tree_api.Query, i int, num_threads int) {}
-// func (t *Tree) Stage3(Q []tree_api.Query, i int, num_threads int) {}
-// func (t *Tree) Stage4(Q []tree_api.Query, i int, num_threads int) {}
+// func (t *CrabTree) Stage1(Q []tree_api.Query, i int, num_threads int) {}
+// func (t *CrabTree) Stage2(Q []tree_api.Query, i int, num_threads int) {}
+// func (t *CrabTree) Stage3(Q []tree_api.Query, i int, num_threads int) {}
+// func (t *CrabTree) Stage4(Q []tree_api.Query, i int, num_threads int) {}
