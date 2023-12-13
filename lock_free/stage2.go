@@ -26,7 +26,6 @@ func (t *LockFreeTree) PrintLeaf(l *Node, idx int) {
 	// }
 }
 
-
 func (t *LockFreeTree) RedistributeWorkLeaves(index int, sharedLeafData [][]*Node) []*Node {
 	if index == 0 {
 		return sharedLeafData[index]
@@ -86,7 +85,6 @@ func (t *LockFreeTree) ResolveHazards(L_i_prime []*Node, queries []tree_api.Quer
 	return res, O_L_i
 }
 
-
 func addModificationIntoList(node *Node, mod *Modification, M_i map[*Node]([]*Modification)) map[*Node]([]*Modification) {
 	val, ok := M_i[node]
 	if !ok {
@@ -103,7 +101,11 @@ func (t *LockFreeTree) ModifyLeafNode(queriesToBeServiced map[*Node]([]tree_api.
 	for node, queries := range queriesToBeServiced {
 		for _, q := range queries {
 			if q.Method == tree_api.MethodInsert {
+				// node.NumKeys++
+				node.Keys = append(node.Keys, -1)
+				node.Pointers = append(node.Pointers, nil)
 				insertIntoLeaf(node, q.Key, q.Pointer)
+				// node.NumKeys++
 			} else if q.Method == tree_api.MethodDelete {
 				removeEntryFromNode(node, q.Key, q.Pointer)
 			}
