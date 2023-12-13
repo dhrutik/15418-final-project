@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"main/tree_api"
 	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -164,7 +165,7 @@ func InsertQueries(tree tree_api.BPTree, numKeys int, threads int) (time.Duratio
 	return elapsedTime, throughput
 }
 
-func RunStage1(tree tree_api.BPTree, queries []tree_api.Query, numKeys int, threads int) (time.Duration, float64) {
+func RunStage1(tree tree_api.BPTree, queries []tree_api.Query, numKeys int, threads int, wg *sync.WaitGroup) (time.Duration, float64) {
 	// ASSERT tree is of type lock_free
 	done := make(chan bool)
 	numKeysPerThread := (numKeys + threads - 1) / threads

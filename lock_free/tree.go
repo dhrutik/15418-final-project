@@ -37,6 +37,8 @@ type Node struct {
 	lock     sync.Mutex
 }
 
+// type Node = tree_api.Node
+
 // type Method int
 
 // const (
@@ -936,11 +938,11 @@ func (t *LockFreeTree) FindMultiple(Q []tree_api.Query) [](*Node) {
 	return res
 }
 
-func (t *LockFreeTree) Stage1(Q []tree_api.Query, i int, num_threads int, wg *sync.WaitGroup) {
+func (t *LockFreeTree) Stage1(Q []tree_api.Query, i int, num_threads int) interface{} {
 	// Stage 1
 	Q_i := t.PartitionInput(Q, i, num_threads)
 	L_i := t.FindMultiple(Q_i)
-	fmt.Printf("printing after call to find multiple\n")
+	fmt.Printf("stage 1 done\n")
 	for _, l := range L_i {
 		fmt.Printf("Leaf: ")
 		for i = 0; i < l.NumKeys; i++ {
@@ -951,10 +953,11 @@ func (t *LockFreeTree) Stage1(Q []tree_api.Query, i int, num_threads int, wg *sy
 		}
 		fmt.Printf("\n")
 	}
-	fmt.Printf("printing tree now...\n")
-	t.PrintTree()
+	return L_i
+	// fmt.Printf("printing tree now...\n")
+	// t.PrintTree()
 
-	defer wg.Done()
+	// defer wg.Done()
 
 	// t.Sync(i, num_threads)
 }
