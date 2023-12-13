@@ -27,9 +27,10 @@ const (
 )
 
 type Query struct {
-	Method Method
-	Key    int
-	Done   bool
+	Method  Method
+	Key     int
+	Done    bool
+	Pointer *Record
 }
 
 type BPTree interface {

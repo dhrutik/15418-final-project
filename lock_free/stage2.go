@@ -26,6 +26,12 @@ func (t *LockFreeTree) PrintLeaf(l *Node, idx int) {
 	// }
 }
 
+func assert(condition bool) {
+	if !condition {
+		panic("assertion failed")
+	}
+}
+
 func (t *LockFreeTree) RedistributeWorkLeaves(index int, sharedLeafData [][]*Node) []*Node {
 	if index == 0 {
 		return sharedLeafData[index]
@@ -85,18 +91,88 @@ func (t *LockFreeTree) ResolveHazards(L_i_prime []*Node, queries []tree_api.Quer
 	return res, O_L_i
 }
 
-func (t *LockFreeTree) Stage2Logic(i int, num_threads int, sharedLeafData [][]*Node, queries []tree_api.Query, R [][]*tree_api.Record) /*[]*Node*/ map[*Node]([]Modification) {
+// From Stage 3 code
+func bigSplit(node *Node) ([]int, []interface{}) {
+	newKeys := make([]int, 0)
+	newNodes := make([]interface{}, 0)
+	newNodeCount := ((node.NumKeys + minOrder - 1) / minOrder) - 1
+	assert(newNodeCount > 0)
+	currIndex := minOrder
+	for nodeNum := 1; nodeNum < newNodeCount; nodeNum++ {
+		newNode, _ := makeNode()
+		newNode.Parent = node.Parent
+		newNode.NumKeys = minOrder - 1
+		for j := 0; j < minOrder; j++ {
+			newNode.Keys[j] = node.Keys[j+currIndex]
+		}
+		for j := 0; j < minOrder; j++ {
+			newNode.Pointers[j] = node.Pointers[j+minOrder]
+		}
+		newKeys = append(newKeys, newNode.Keys[nodeNum*minOrder])
+		newNodes = append(newNodes, newNode)
+		currIndex += minOrder
+	}
+	node.NumKeys = minOrder - 1
+	node.Keys = node.Keys[:node.NumKeys]
+	node.Pointers = node.Pointers[:node.NumKeys+1]
+	return newKeys, newNodes
+}
+
+func addModificationIntoList(node *Node, mod *Modification, M_i map[*Node]([]*Modification)) map[*Node]([]*Modification) {
+	val, ok := M_i[node]
+	if !ok {
+		val = make([]*Modification, 0)
+		M_i[node] = append(val, mod)
+	} else {
+		M_i[node] = append(val, mod)
+	}
+	return M_i
+}
+
+func (t *LockFreeTree) ModifyLeafNode(queriesToBeServiced map[*Node]([]tree_api.Query), L_i_prime []*Node) map[*Node]([]*Modification) {
+	M_i := make(map[*Node]([]*Modification))
+	for node, queries := range queriesToBeServiced {
+		for _, q := range queries {
+			if q.Method == tree_api.MethodInsert {
+				insertIntoLeaf(node, q.Key, q.Pointer)
+			} else if q.Method == tree_api.MethodDelete {
+				removeEntryFromNode(node, q.Key, q.Pointer)
+			}
+		}
+	}
+	for node, _ := range queriesToBeServiced {
+		if node.NumKeys > maxOrder {
+			// Split Case
+			newKeys, newNodes := bigSplit(node)
+			mod := &Modification{Split, node.Parent, &SplitData{newKeys, newNodes}, nil, nil}
+			M_i = addModificationIntoList(node, mod, M_i)
+		} else if node.NumKeys < minOrder {
+			// Underflow Case
+			leafKeys := node.Keys
+			keyToRemove := node.Keys[0]
+			childKeys := make([]int, 0)
+			childKeys = append(childKeys, keyToRemove)
+			childPtrs := make([]interface{}, 0)
+			childPtrs = append(childPtrs, node)
+			mod := &Modification{Underflow, node.Parent, nil, &UnderflowData{childKeys, childPtrs}, leafKeys}
+			M_i = addModificationIntoList(node, mod, M_i)
+		}
+	}
+	return M_i
+}
+
+func (t *LockFreeTree) Stage2Logic(i int, num_threads int, sharedLeafData [][]*Node, queries []tree_api.Query, R [][]*tree_api.Record) /*[]*Node*/ map[*Node]([]*Modification) {
 	// Redistribute Work
 	L_i_prime := t.RedistributeWorkLeaves(i, sharedLeafData)
-	res, O_l_i := t.ResolveHazards(L_i_prime, queries)
+	res, O_L_i := t.ResolveHazards(L_i_prime, queries)
 	// Update shared results slice
 	R[i] = res
-	// return L_i_prime
-	return nil
+	M_i := t.ModifyLeafNode(O_L_i, L_i_prime)
+	return M_i
 	// Modify leaves independently
 }
 
-func (t *LockFreeTree) modifySharedModLists(index int, sharedLeafData [][]*Node, sharedModLists [](map[*Node]([]Modification)), queries []tree_api.Query, R [][]*tree_api.Record, palmMaxThreadCount int, wg *sync.WaitGroup /*, testing [][]*Node*/) {
+func (t *LockFreeTree) modifySharedModLists(index int, sharedLeafData [][]*Node, sharedModLists [](map[*Node]([]*Modification)), queries []tree_api.Query, R [][]*tree_api.Record, palmMaxThreadCount int, wg *sync.WaitGroup /*, testing [][]*Node*/) {
 	defer wg.Done()
 	// fmt.Printf("in modsharedlists index: %d\n", index)
 	res := t.Stage2Logic(index, palmMaxThreadCount, sharedLeafData, queries, R)
@@ -104,7 +180,7 @@ func (t *LockFreeTree) modifySharedModLists(index int, sharedLeafData [][]*Node,
 	sharedModLists[index] = res
 }
 
-func (t *LockFreeTree) Stage2(sharedLeafData [][]*Node, palmMaxThreadCount int, queries []tree_api.Query) ([](map[*Node]([]Modification)), [][]*tree_api.Record) {
+func (t *LockFreeTree) Stage2(sharedLeafData [][]*Node, palmMaxThreadCount int, queries []tree_api.Query) ([](map[*Node]([]*Modification)), [][]*tree_api.Record) {
 	fmt.Printf("Starting Stage 2\n")
 	var wg2 sync.WaitGroup
 	dbg := false
@@ -115,9 +191,9 @@ func (t *LockFreeTree) Stage2(sharedLeafData [][]*Node, palmMaxThreadCount int, 
 	// }
 
 	// Set up
-	sharedModLists := make([]map[*Node]([]Modification), palmMaxThreadCount)
+	sharedModLists := make([]map[*Node]([]*Modification), palmMaxThreadCount)
 	for i := 0; i < palmMaxThreadCount; i++ {
-		sharedModLists[i] = make(map[*Node]([]Modification))
+		sharedModLists[i] = make(map[*Node]([]*Modification))
 	}
 	R := make([][]*tree_api.Record, palmMaxThreadCount+1) // could potentially have off by 1 issues (just not using 0 i guess)
 	for i := 0; i < palmMaxThreadCount; i++ {
