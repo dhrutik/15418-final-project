@@ -8,7 +8,6 @@ import (
 	"main/lock_free"
 	"main/seq_tree"
 	"main/tree_api"
-	"sync"
 	"time"
 )
 
@@ -39,13 +38,13 @@ func makeTreeList(threadCount int, treeConstructor func() tree_api.BPTree) []tre
 	return trees
 }
 
-func modifySharedLeaves(index int, sharedLeafData [][]Node*, queries 
-						[]tree_api.Query, palmMaxThreadCount int, wg *sync.WaitGroup) {
-	defer wg.Done()
+// func modifySharedLeaves(index int, sharedLeafData [][]Node*, queries
+// 						[]tree_api.Query, palmMaxThreadCount int, wg *sync.WaitGroup) {
+// 	defer wg.Done()
 
-	res := lock_free_tree.Stage1(queries, i, palmMaxThreadCount)
-	sharedArray[index] = res
-}
+// 	res := lock_free_tree.Stage1(queries, i, palmMaxThreadCount)
+// 	sharedArray[index] = res
+// }
 
 func main() {
 
@@ -69,42 +68,11 @@ func main() {
 		palmKeyCount := 10
 		lock_free_tree := lock_free.NewTree()
 		palmMaxThreadCount := 3
-		var wg1 sync.WaitGroup
+		// var wg1 sync.WaitGroup
 
 		// Construct Tree
 		benchmark.InsertQueries(lock_free_tree, palmKeyCount, palmMaxThreadCount)
-		queries := make([]tree_api.Query, 0)
-		for i := 0; i < palmKeyCount; i++ {
-			queries = append(queries, tree_api.Query{tree_api.MethodFind, i, false})
-		}
-
-		// Run Stage 1
-		sharedLeafData := make([][]Node*, 1)
-		for i := 0; i < palmMaxThreadCount; i++ {
-			sharedLeafData[i] = make([]Node*, 0)
-		}
-		for i := 1; i <= palmMaxThreadCount; i++ {
-			wg1.Add(1) // Increment the counter for each goroutine
-			go modifySharedLeaves(i, sharedLeafData, queries, palmMaxThreadCount, &wg1)
-			// go lock_free_tree.Stage1(queries, i, palmMaxThreadCount, &wg1)
-		}
-		// Sync
-		wg1.Wait()
-		fmt.Println("All workers have completed.")
-		fmt.Println("Printing sharedLeafData vals")
-		for _, L_i := range sharedLeafData {
-			for _, l := range L_i {
-				fmt.Printf("Leaf: ")
-				for i = 0; i < l.NumKeys; i++ {
-					if verbose_output {
-						fmt.Printf("%d \n", l.Pointers[i])
-					}
-					fmt.Printf("%d ", l.Keys[i])
-				}
-				fmt.Printf("\n")
-			}
-		}
-		
+		lock_free_tree.Palm(palmKeyCount, palmMaxThreadCount)
 
 		// We are assured that the results reflect the state of the tree
 		// when each query was dispatched, because no modifications to the tree have occurred yet.

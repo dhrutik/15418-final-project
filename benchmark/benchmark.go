@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"main/tree_api"
 	"math/rand"
-	"sync"
 	"time"
 )
 
@@ -165,33 +164,33 @@ func InsertQueries(tree tree_api.BPTree, numKeys int, threads int) (time.Duratio
 	return elapsedTime, throughput
 }
 
-func RunStage1(tree tree_api.BPTree, queries []tree_api.Query, numKeys int, threads int, wg *sync.WaitGroup) (time.Duration, float64) {
-	// ASSERT tree is of type lock_free
-	done := make(chan bool)
-	numKeysPerThread := (numKeys + threads - 1) / threads
-	// keys := makeShuffledKeysList(numKeys)
-	startTime := time.Now()
-	for i := 0; i < threads; i++ {
-		go func(index int) {
-			startIndex := index * numKeysPerThread
-			endIndex := startIndex + numKeysPerThread
-			if endIndex > numKeys {
-				endIndex = numKeys
-			}
-			if startIndex > numKeys {
-				startIndex = numKeys
-			}
-			tree.Stage1(queries, index, threads)
-			// findKeys(tree, startIndex, endIndex, index, keys)
-			done <- true
-		}(i)
-	}
-	for doneCount := 0; doneCount < threads; doneCount++ {
-		<-done
-	}
-	elapsedTime := time.Since(startTime)
-	throughput := float64(numKeys) / elapsedTime.Seconds()
-	fmt.Printf("STAGE 1: Find %d keys in %f seconds with %d threads, throughput: %f keys/s\n", numKeys, elapsedTime.Seconds(), threads, throughput)
-	return elapsedTime, throughput
+// func RunStage1(tree tree_api.BPTree, queries []tree_api.Query, numKeys int, threads int, wg *sync.WaitGroup) (time.Duration, float64) {
+// 	// ASSERT tree is of type lock_free
+// 	done := make(chan bool)
+// 	numKeysPerThread := (numKeys + threads - 1) / threads
+// 	// keys := makeShuffledKeysList(numKeys)
+// 	startTime := time.Now()
+// 	for i := 0; i < threads; i++ {
+// 		go func(index int) {
+// 			startIndex := index * numKeysPerThread
+// 			endIndex := startIndex + numKeysPerThread
+// 			if endIndex > numKeys {
+// 				endIndex = numKeys
+// 			}
+// 			if startIndex > numKeys {
+// 				startIndex = numKeys
+// 			}
+// 			tree.Stage1(queries, index, threads)
+// 			// findKeys(tree, startIndex, endIndex, index, keys)
+// 			done <- true
+// 		}(i)
+// 	}
+// 	for doneCount := 0; doneCount < threads; doneCount++ {
+// 		<-done
+// 	}
+// 	elapsedTime := time.Since(startTime)
+// 	throughput := float64(numKeys) / elapsedTime.Seconds()
+// 	fmt.Printf("STAGE 1: Find %d keys in %f seconds with %d threads, throughput: %f keys/s\n", numKeys, elapsedTime.Seconds(), threads, throughput)
+// 	return elapsedTime, throughput
 
-}
+// }

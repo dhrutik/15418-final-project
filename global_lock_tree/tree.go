@@ -57,7 +57,9 @@ func (t *GlobalLockTree) PrintLeaves() {
 	t.tree.PrintLeaves()
 }
 
-func (t *GlobalLockTree) Stage1(Q []tree_api.Query, i int, num_threads int) {}
-func (t *GlobalLockTree) Stage2(Q []tree_api.Query, i int, num_threads int) {}
-func (t *GlobalLockTree) Stage3(Q []tree_api.Query, i int, num_threads int) {}
-func (t *GlobalLockTree) Stage4(Q []tree_api.Query, i int, num_threads int) {}
+func (t *GlobalLockTree) Palm(key_count int, num_threads int) {}
+
+// func (t *GlobalLockTree) Stage1(Q []tree_api.Query, i int, num_threads int) {}
+// func (t *GlobalLockTree) Stage2(Q []tree_api.Query, i int, num_threads int) {}
+// func (t *GlobalLockTree) Stage3(Q []tree_api.Query, i int, num_threads int) {}
+// func (t *GlobalLockTree) Stage4(Q []tree_api.Query, i int, num_threads int) {}

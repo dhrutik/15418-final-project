@@ -37,6 +37,9 @@ type Node struct {
 	lock     sync.Mutex
 }
 
+type Modification struct {
+}
+
 // type Node = tree_api.Node
 
 // type Method int
@@ -899,69 +902,51 @@ func (t *LockFreeTree) deleteEntry(n *Node, key int, pointer interface{}) {
 
 }
 
-// Evenly distributes queries across all threads, return slice corresponding to ith thread
-func (t *LockFreeTree) PartitionInput(Q []tree_api.Query, i int, num_threads int) []tree_api.Query {
-	num_queries := len(Q)
-	start := i + num_threads - 1 // because will never have 0 threads
-	end := start + (num_queries / num_threads)
-	// TODO: CHECK THIS MATH, Ensure all queries are in some partition
-	res := Q[start:end]
-	fmt.Printf("\nIn PartitionInput for %d threads, thread_id: %d\n", num_threads, i)
-	fmt.Printf("Queries:\n")
-	for _, q := range res {
-		fmt.Printf("res: QueryMethod: %d, QueryKey: %d\n", q.Method, q.Key)
+func (t *LockFreeTree) Palm(palmKeyCount int, palmMaxThreadCount int) {
+	// var wg1 sync.WaitGroup
+	queries := make([]tree_api.Query, 0)
+	for i := 0; i < palmKeyCount; i++ {
+		queries = append(queries, tree_api.Query{tree_api.MethodFind, i, false})
 	}
 
-	return res
-}
+	sharedLeafData := t.Stage1(queries, palmMaxThreadCount) // L
+	sharedModLists, R := t.Stage2(sharedLeafData)           // M
+	finalModList := t.Stage3(sharedModLists)
+	t.Stage4(finalModList)
 
-// func printNodeSlice(s [](*Node)) {
-// 	fmt.Printf("key=%d\n", s.)
-// }
-
-func (t *LockFreeTree) FindMultiple(Q []tree_api.Query) [](*Node) {
-	res := [](*Node){}
-	fmt.Printf("b4 len of res: %d\n", len(res))
-	verbose := false // debugging purposes
-	for _, q := range Q {
-		// TODO: potentially need to remove q from Q once found, or mark as done (serviced query)
-		if q.Method == tree_api.MethodFind {
-			key := q.Key
-			node := t.findLeaf(key, verbose)
-			res = append(res, node) // TODO: Check for errors
-			q.Done = true           // Ensure this can actually be done in place like this
-			fmt.Printf("after len of res: %d\n", len(res))
-		} else {
-			continue
-		}
+	if false {
+		print(R)
 	}
-	return res
+
+	// Run Stage 1
+	// sharedLeafData := make([][]*Node, palmMaxThreadCount+1)
+	// for i := 1; i <= palmMaxThreadCount; i++ {
+	// 	sharedLeafData[i] = make([]*Node, 0)
+	// }
+	// for i := 1; i <= palmMaxThreadCount; i++ {
+	// 	wg1.Add(1) // Increment the counter for each goroutine
+	// 	go t.modifySharedLeaves(i, sharedLeafData, queries, palmMaxThreadCount, &wg1)
+	// 	// go lock_free_tree.Stage1(queries, i, palmMaxThreadCount, &wg1)
+	// }
+	// // Sync
+	// wg1.Wait()
+	// fmt.Println("All workers have completed.")
+	// fmt.Println("Printing sharedLeafData vals")
+	// for idx, L_i := range sharedLeafData {
+	// 	fmt.Printf("index: %d\n", idx)
+	// 	for _, l := range L_i {
+	// 		fmt.Printf("Leaf: ")
+	// 		for i := 0; i < l.NumKeys; i++ {
+	// 			if verbose_output {
+	// 				fmt.Printf("%d \n", l.Pointers[i])
+	// 			}
+	// 			fmt.Printf("%d ", l.Keys[i])
+	// 		}
+	// 		fmt.Printf("\n")
+	// 	}
+	// }
 }
 
-func (t *LockFreeTree) Stage1(Q []tree_api.Query, i int, num_threads int) interface{} {
-	// Stage 1
-	Q_i := t.PartitionInput(Q, i, num_threads)
-	L_i := t.FindMultiple(Q_i)
-	fmt.Printf("stage 1 done\n")
-	for _, l := range L_i {
-		fmt.Printf("Leaf: ")
-		for i = 0; i < l.NumKeys; i++ {
-			if verbose_output {
-				fmt.Printf("%d \n", l.Pointers[i])
-			}
-			fmt.Printf("%d ", l.Keys[i])
-		}
-		fmt.Printf("\n")
-	}
-	return L_i
-	// fmt.Printf("printing tree now...\n")
-	// t.PrintTree()
-
-	// defer wg.Done()
-
-	// t.Sync(i, num_threads)
-}
-
-func (t *LockFreeTree) Stage2(Q []tree_api.Query, i int, num_threads int) {}
-func (t *LockFreeTree) Stage3(Q []tree_api.Query, i int, num_threads int) {}
-func (t *LockFreeTree) Stage4(Q []tree_api.Query, i int, num_threads int) {}
+// func (t *LockFreeTree) Stage2(Q []tree_api.Query, i int, num_threads int) {}
+// func (t *LockFreeTree) Stage3(Q []tree_api.Query, i int, num_threads int) {}
+// func (t *LockFreeTree) Stage4(Q []tree_api.Query, i int, num_threads int) {}
