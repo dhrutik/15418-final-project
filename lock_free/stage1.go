@@ -61,16 +61,16 @@ func (t *LockFreeTree) modifySharedLeaves(index int, sharedLeafData [][]*Node, q
 func (t *LockFreeTree) Stage1(queries []tree_api.Query, palmMaxThreadCount int) [][]*Node {
 	var wg1 sync.WaitGroup
 	dbg := true
-	sharedLeafData := make([][]*Node, palmMaxThreadCount+1)
-	for i := 1; i <= palmMaxThreadCount; i++ {
+	sharedLeafData := make([][]*Node, palmMaxThreadCount)
+	for i := 0; i < palmMaxThreadCount; i++ {
 		sharedLeafData[i] = make([]*Node, 0)
 	}
-	for i := 1; i <= palmMaxThreadCount; i++ {
+	for i := 0; i < palmMaxThreadCount; i++ {
 		wg1.Add(1) // Increment the counter for each goroutine
 		go t.modifySharedLeaves(i, sharedLeafData, queries, palmMaxThreadCount, &wg1)
 	}
 	wg1.Wait()
-	fmt.Println("All workers have completed.")
+	fmt.Println("All workers have completed Stage 1.")
 
 	if dbg {
 		fmt.Println("Printing sharedLeafData vals")
