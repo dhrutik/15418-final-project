@@ -58,6 +58,7 @@ func (t *LockFreeTree) modifyInternalNode(node *Node, mod *Modification) *Modifi
 
 func (t *LockFreeTree) stage3Thread(sharedModLists [](map[*Node]([]*Modification)), newSharedModLists [](map[*Node]([]*Modification)), threadId int, depth int, wg *sync.WaitGroup) {
 	for d := 1; d < depth; d++ {
+		wg.Add(1)
 		updatedModList := t.getUpdatedModList(sharedModLists, threadId)
 		for node, modList := range updatedModList {
 			for _, mod := range modList {
@@ -67,6 +68,8 @@ func (t *LockFreeTree) stage3Thread(sharedModLists [](map[*Node]([]*Modification
 				}
 			}
 		}
+		wg.Done()
+		wg.Add(1)
 		wg.Done()
 	}
 }
@@ -82,13 +85,11 @@ func (t *LockFreeTree) Stage3(sharedModLists [](map[*Node]([]*Modification)), pa
 	// this loop just syncs after each loop iteration
 	// allocate a new sharedModList
 	for d := 1; d < depth; d++ {
-		wg.Add(palmMaxThreadCount)
 		wg.Wait()
 		// copy over newSharedModLists to sharedModLists
 		for j := 0; j < len(sharedModLists); j++ {
 			sharedModLists[j] = newSharedModLists[j]
 		}
-		wg.Add(palmMaxThreadCount)
 		wg.Wait()
 	}
 	return nil
