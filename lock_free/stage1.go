@@ -10,7 +10,8 @@ import (
 // Evenly distributes queries across all threads, return slice corresponding to ith thread
 func (t *LockFreeTree) PartitionInput(Q []tree_api.Query, i int, num_threads int) []tree_api.Query {
 	num_queries := len(Q)
-	start := i + num_threads - 1 // because will never have 0 threads
+	fmt.Printf("i: %d, num_threads: %d\n", i, num_threads)
+	start := i * (num_queries / num_threads) // because will never have 0 threads
 	end := start + (num_queries / num_threads)
 	// TODO: CHECK THIS MATH, Ensure all queries are in some partition
 	res := Q[start:end]
@@ -60,7 +61,7 @@ func (t *LockFreeTree) modifySharedLeaves(index int, sharedLeafData [][]*Node, q
 
 func (t *LockFreeTree) Stage1(queries []tree_api.Query, palmMaxThreadCount int) [][]*Node {
 	var wg1 sync.WaitGroup
-	dbg := true
+	dbg := false
 	sharedLeafData := make([][]*Node, palmMaxThreadCount)
 	for i := 0; i < palmMaxThreadCount; i++ {
 		sharedLeafData[i] = make([]*Node, 0)
