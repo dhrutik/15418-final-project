@@ -133,20 +133,24 @@ func (t *LockFreeTree) ModifyLeafNode(queriesToBeServiced map[*Node]([]tree_api.
 func (t *LockFreeTree) Stage2Logic(i int, num_threads int, sharedLeafData [][]*Node, queries []tree_api.Query, R [][]*tree_api.Record) /*[]*Node*/ map[*Node]([]*Modification) {
 	// Redistribute Work
 	L_i_prime := t.RedistributeWorkLeaves(i, sharedLeafData)
+	// fmt.Println("thread: ", i, "starting stage2 resolveHazards")
 	res, O_L_i := t.ResolveHazards(L_i_prime, queries)
 	// Update shared results slice
 	R[i] = res
+	// fmt.Println("thread: ", i, "starting stage2 modifyLeafNode")
 	M_i := t.ModifyLeafNode(O_L_i, L_i_prime)
 	return M_i
 	// Modify leaves independently
 }
 
 func (t *LockFreeTree) modifySharedModLists(index int, sharedLeafData [][]*Node, sharedModLists [](map[*Node]([]*Modification)), queries []tree_api.Query, R [][]*tree_api.Record, palmMaxThreadCount int, wg *sync.WaitGroup /*, testing [][]*Node*/) {
+	// fmt.Println("thread: ", index, "starting stage2 modifySharedModLists")
 	defer wg.Done()
 	// fmt.Printf("in modsharedlists index: %d\n", index)
 	res := t.Stage2Logic(index, palmMaxThreadCount, sharedLeafData, queries, R)
 	// testing[index] = res
 	sharedModLists[index] = res
+	// fmt.Println("Thread: ", index, "finished stage2 modifySharedModLists")
 }
 
 func (t *LockFreeTree) Stage2(sharedLeafData [][]*Node, palmMaxThreadCount int, queries []tree_api.Query) ([](map[*Node]([]*Modification)), [][]*tree_api.Record) {
@@ -175,7 +179,7 @@ func (t *LockFreeTree) Stage2(sharedLeafData [][]*Node, palmMaxThreadCount int, 
 		go t.modifySharedModLists(i, sharedLeafData, sharedModLists, queries, R, palmMaxThreadCount, &wg2 /*, testing*/)
 	}
 	wg2.Wait()
-	fmt.Println("All workers have completed Stage 2.")
+	// fmt.Println("All workers have completed Stage 2.")
 
 	if dbg {
 		// fmt.Println("Printing testing redistributed leaves vals")

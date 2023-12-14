@@ -56,21 +56,23 @@ func (t *LockFreeTree) modifyInternalNode(node *Node, mod *Modification) *Modifi
 	return &Modification{NoMod, node.Parent, nil, nil, mod.OrphanedKeys}
 }
 
-func (t *LockFreeTree) stage3Thread(sharedModLists [](map[*Node]([]*Modification)), newSharedModLists [](map[*Node]([]*Modification)), threadId int, depth int, wg *sync.WaitGroup) {
+func (t *LockFreeTree) stage3Thread(sharedModLists [](map[*Node]([]*Modification)), newSharedModLists [](map[*Node]([]*Modification)), threadId int, depth int, wg *sync.WaitGroup, doneCopying chan bool) {
 	for d := 1; d < depth; d++ {
 		wg.Add(1)
 		updatedModList := t.getUpdatedModList(sharedModLists, threadId)
 		for node, modList := range updatedModList {
 			for _, mod := range modList {
 				newMod := t.modifyInternalNode(node, mod)
-				if newMod != nil {
+				if newSharedModLists[threadId] == nil {
+					panic("huh")
+				}
+				if newMod != nil && newMod.Parent != nil {
 					newSharedModLists[threadId][newMod.Parent] = append(newSharedModLists[threadId][newMod.Parent], newMod)
 				}
 			}
 		}
 		wg.Done()
-		wg.Add(1)
-		wg.Done()
+		<-doneCopying
 	}
 }
 
@@ -79,8 +81,12 @@ func (t *LockFreeTree) Stage3(sharedModLists [](map[*Node]([]*Modification)), pa
 	// spin off threads first, passing them sharedModLists and thread id
 	wg := sync.WaitGroup{}
 	newSharedModLists := make([](map[*Node]([]*Modification)), palmMaxThreadCount)
+	if newSharedModLists == nil {
+		panic("newSharedModLists is nil")
+	}
+	doneCopying := make(chan bool, palmMaxThreadCount)
 	for i := 0; i < palmMaxThreadCount; i++ {
-		go t.stage3Thread(sharedModLists, newSharedModLists, i, depth, &wg)
+		go t.stage3Thread(sharedModLists, newSharedModLists, i, depth, &wg, doneCopying)
 	}
 	// this loop just syncs after each loop iteration
 	// allocate a new sharedModList
@@ -89,8 +95,11 @@ func (t *LockFreeTree) Stage3(sharedModLists [](map[*Node]([]*Modification)), pa
 		// copy over newSharedModLists to sharedModLists
 		for j := 0; j < len(sharedModLists); j++ {
 			sharedModLists[j] = newSharedModLists[j]
+			newSharedModLists[j] = make(map[*Node]([]*Modification))
 		}
-		wg.Wait()
+		for i := 0; i < palmMaxThreadCount; i++ {
+			doneCopying <- true
+		}
 	}
 	return nil
 }

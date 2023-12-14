@@ -65,14 +65,17 @@ func main() {
 	}
 
 	if FLAG_test_palm {
-		palmKeyCount := 10
+		palmTotalKeyCount := 1000000
+		palmKeyCount := 1000
 		lock_free_tree := lock_free.NewTree()
-		palmMaxThreadCount := 3
+		palmMaxThreadCount := 16
 		// var wg1 sync.WaitGroup
 
 		// Construct Tree
 		benchmark.InsertQueries(lock_free_tree, palmKeyCount, palmMaxThreadCount)
-		lock_free_tree.Palm(palmKeyCount, palmMaxThreadCount)
+		for totalKeys := 0; totalKeys < palmTotalKeyCount; totalKeys += palmKeyCount {
+			lock_free_tree.Palm(palmKeyCount, palmMaxThreadCount)
+		}
 
 		// We are assured that the results reflect the state of the tree
 		// when each query was dispatched, because no modifications to the tree have occurred yet.
