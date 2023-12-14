@@ -106,9 +106,9 @@ func (t *CrabTree) Find(key int, verbose bool) (*tree_api.Record, error) {
 	// t.lock.Lock()
 	// defer t.lock.Unlock()
 	res, err := t.find(key, verbose)
-	if err != nil {
-		fmt.Println("Find key", key)
-	}
+	// if err != nil {
+	// 	fmt.Println("Find key", key)
+	// }
 	return res, err
 }
 
@@ -223,6 +223,8 @@ func (t *CrabTree) PrintLeaves() {
 }
 
 func (t *CrabTree) Delete(key int) error {
+	t.lock.Lock()
+	defer t.lock.Unlock()
 	key_record, err := t.Find(key, false)
 	if err != nil {
 		return err

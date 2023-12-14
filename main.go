@@ -14,7 +14,7 @@ import (
 func runSpeedup(trees []tree_api.BPTree, keyCount int, threadCount int, benchmarkFunc func(tree_api.BPTree, int, int) (time.Duration, float64)) {
 	duration, _ := benchmarkFunc(trees[0], keyCount, 1)
 	for i := 1; i < len(trees); i++ {
-		threadCount := 1 << (i + 1) // 2 ** (i + 1)
+		threadCount := 1 << i // 2 ** (i + 1)
 		newDuration, _ := benchmarkFunc(trees[i], keyCount, threadCount)
 		fmt.Printf("Speedup over sequential: %f\n", duration.Seconds()/newDuration.Seconds())
 	}
@@ -51,12 +51,12 @@ func main() {
 	// Set up trees
 	keyCount := 1000000
 	seqTree := seq_tree.NewTree()
-	maxThreadCount := 64
+	maxThreadCount := 128
 	globalLockTrees := makeTreeList(maxThreadCount, global_lock_tree.NewTree)
 	crabTrees := makeTreeList(maxThreadCount, crab.NewTree)
 
-	FLAG_run_benchmarks := false
-	FLAG_test_palm := true
+	FLAG_run_benchmarks := true
+	FLAG_test_palm := false
 
 	if FLAG_run_benchmarks {
 		runBenchmark("Insert", benchmark.RunInsertBenchmark, seqTree, globalLockTrees, crabTrees, keyCount, maxThreadCount)
