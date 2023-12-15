@@ -98,12 +98,33 @@ func (t *CrabTree) find(key int, verbose bool) (*tree_api.Record, error) {
 	}
 
 	r, _ := c.Pointers[i].(*tree_api.Record)
+	c.lock.Unlock()
 
 	return r, nil
 }
 
+func (t *CrabTree) findForDelete(key int, verbose bool) (*tree_api.Record, *Node, bool, []*Node, error) {
+	i := 0
+	c, treeLocked, lockList := t.findLeafForDelete(key, verbose)
+	if c == nil {
+		return nil, nil, treeLocked, lockList, errors.New("key not found")
+	}
+	for i = 0; i < c.NumKeys; i++ {
+		if c.Keys[i] == key {
+			break
+		}
+	}
+	if i == c.NumKeys {
+		return nil, nil, treeLocked, lockList, errors.New("key not found")
+	}
+
+	r, _ := c.Pointers[i].(*tree_api.Record)
+
+	return r, c, treeLocked, lockList, nil
+}
+
 func (t *CrabTree) Find(key int, verbose bool) (*tree_api.Record, error) {
-	// t.lock.Lock()
+	t.lock.Lock()
 	// defer t.lock.Unlock()
 	res, err := t.find(key, verbose)
 	// if err != nil {
@@ -224,12 +245,19 @@ func (t *CrabTree) PrintLeaves() {
 
 func (t *CrabTree) Delete(key int) error {
 	t.lock.Lock()
-	defer t.lock.Unlock()
-	key_record, err := t.Find(key, false)
+	// defer t.lock.Unlock()
+	if t.Root == nil {
+		t.lock.Unlock()
+		return errors.New("empty tree")
+	}
+	key_record, key_leaf, treeLocked, lockList, err := t.findForDelete(key, false)
+
+
+	defer t.clearLockList(treeLocked, lockList)
 	if err != nil {
 		return err
 	}
-	key_leaf := t.findLeaf(key, false)
+
 	if key_record != nil && key_leaf != nil {
 		t.deleteEntry(key_leaf, key, key_record)
 	}
@@ -366,11 +394,59 @@ func (t *CrabTree) findLeafForInsert(key int, verbose bool) (*Node, bool, []*Nod
 func (t *CrabTree) findLeaf(key int, verbose bool) *Node {
 	i := 0
 	c := t.Root
-	if c == nil {
+	c.lock.Lock()
+	t.lock.Unlock()
+	for !c.IsLeaf {
 		if verbose {
-			fmt.Printf("Empty tree.\n")
+			fmt.Printf("[")
+			for i = 0; i < c.NumKeys-1; i++ {
+				fmt.Printf("%d ", c.Keys[i])
+			}
+			fmt.Printf("%d]", c.Keys[i])
 		}
-		return c
+		i = 0
+		for i < c.NumKeys {
+			if key >= c.Keys[i] {
+				i += 1
+			} else {
+				break
+			}
+		}
+		if verbose {
+			fmt.Printf("%d ->\n", i)
+		}
+		c, _ = c.Pointers[i].(*Node)
+		c.lock.Lock()
+		c.Parent.lock.Unlock()
+	}
+	if verbose {
+		fmt.Printf("Leaf [")
+		for i = 0; i < c.NumKeys-1; i++ {
+			fmt.Printf("%d ", c.Keys[i])
+		}
+		fmt.Printf("%d] ->\n", c.Keys[i])
+	}
+	return c
+}
+
+func (t *CrabTree) findLeafForDelete(key int, verbose bool) (*Node, bool, []*Node) {
+	i := 0
+	c := t.Root
+	lockList := []*Node{}
+	c.lock.Lock()
+	treeLocked := true
+	lockList = append(lockList, c)
+	var min_keys int
+	if c.IsLeaf {
+		min_keys = cut(order - 1)
+	} else {
+		min_keys = cut(order) - 1
+	}
+	if c.NumKeys > min_keys {
+		t.lock.Unlock()
+		treeLocked = false
+		// No need to maintain tree lock, the root will not merge
+
 	}
 	for !c.IsLeaf {
 		if verbose {
@@ -392,6 +468,17 @@ func (t *CrabTree) findLeaf(key int, verbose bool) *Node {
 			fmt.Printf("%d ->\n", i)
 		}
 		c, _ = c.Pointers[i].(*Node)
+		c.lock.Lock()
+		if c.IsLeaf {
+			min_keys = cut(order - 1)
+		} else {
+			min_keys = cut(order) - 1
+		}
+		if c.NumKeys > min_keys {
+			lockList = t.clearLockList(treeLocked, lockList)
+			treeLocked = false
+		}
+		lockList = append(lockList, c)
 	}
 	if verbose {
 		fmt.Printf("Leaf [")
@@ -400,7 +487,7 @@ func (t *CrabTree) findLeaf(key int, verbose bool) *Node {
 		}
 		fmt.Printf("%d] ->\n", c.Keys[i])
 	}
-	return c
+	return c, treeLocked, lockList
 }
 
 func cut(length int) int {
