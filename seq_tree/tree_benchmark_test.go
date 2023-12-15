@@ -5,6 +5,7 @@ import (
 	"testing"
 )
 
+// copied directly from https://github.com/collinglass/bptree
 func BenchmarkInsert(b *testing.B) {
 	t := NewTree()
 

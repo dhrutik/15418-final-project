@@ -14,7 +14,7 @@ import (
 func runSpeedup(trees []tree_api.BPTree, keyCount int, threadCount int, benchmarkFunc func(tree_api.BPTree, int, int) (time.Duration, float64)) {
 	duration, _ := benchmarkFunc(trees[0], keyCount, 1)
 	for i := 1; i < len(trees); i++ {
-		threadCount := 1 << i // 2 ** (i + 1)
+		threadCount := 1 << i // 2 ** i
 		newDuration, _ := benchmarkFunc(trees[i], keyCount, threadCount)
 		fmt.Printf("Speedup over sequential: %f\n", duration.Seconds()/newDuration.Seconds())
 	}
@@ -38,14 +38,6 @@ func makeTreeList(threadCount int, treeConstructor func() tree_api.BPTree) []tre
 	return trees
 }
 
-// func modifySharedLeaves(index int, sharedLeafData [][]Node*, queries
-// 						[]tree_api.Query, palmMaxThreadCount int, wg *sync.WaitGroup) {
-// 	defer wg.Done()
-
-// 	res := lock_free_tree.Stage1(queries, i, palmMaxThreadCount)
-// 	sharedArray[index] = res
-// }
-
 func main() {
 
 	// Set up trees
@@ -55,7 +47,7 @@ func main() {
 	globalLockTrees := makeTreeList(maxThreadCount, global_lock_tree.NewTree)
 	crabTrees := makeTreeList(maxThreadCount, crab.NewTree)
 
-	FLAG_run_benchmarks := false
+	FLAG_run_benchmarks := true
 	FLAG_test_palm := true
 
 	if FLAG_run_benchmarks {
@@ -73,11 +65,6 @@ func main() {
 		benchmark.PalmInsertBenchmark(lock_free_tree.(*lock_free.LockFreeTree), palmTotalKeyCount, palmKeyCount, palmMaxThreadCount)
 		benchmark.PalmFindBenchmark(lock_free_tree.(*lock_free.LockFreeTree), palmTotalKeyCount, palmKeyCount, palmMaxThreadCount)
 		benchmark.PalmDeleteBenchmark(lock_free_tree.(*lock_free.LockFreeTree), palmTotalKeyCount, palmKeyCount, palmMaxThreadCount)
-		// var wg1 sync.WaitGroup
 
-		// Construct Tree
-		// for totalKeys := 0; totalKeys < palmTotalKeyCount; totalKeys += palmKeyCount {
-		// 	lock_free_tree.PalmBasic(palmKeyCount, palmMaxThreadCount)
-		// }
 	}
 }

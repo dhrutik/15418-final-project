@@ -973,12 +973,9 @@ func (t *CrabTree) deleteEntry(n *Node, key int, pointer interface{}) {
 }
 
 func (t *CrabTree) PalmBasic(key_count int, num_threads int) {
-
+	panic("not implemented for CrabTree")
 }
 
-func (t *CrabTree) Palm(queries []tree_api.Query, num_threads int) [][]*tree_api.Record { return nil }
-
-// func (t *CrabTree) Stage1(Q []tree_api.Query, i int, num_threads int) {}
-// func (t *CrabTree) Stage2(Q []tree_api.Query, i int, num_threads int) {}
-// func (t *CrabTree) Stage3(Q []tree_api.Query, i int, num_threads int) {}
-// func (t *CrabTree) Stage4(Q []tree_api.Query, i int, num_threads int) {}
+func (t *CrabTree) Palm(queries []tree_api.Query, num_threads int) [][]*tree_api.Record {
+	panic("not implemented for CrabTree")
+}

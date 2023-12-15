@@ -62,37 +62,16 @@ type Modification struct {
 	OrphanedKeys  []int // keys of descendants to be re-inserted
 }
 
-// type Node = tree_api.Node
-
-// type Method int
-
-// const (
-// 	MethodFind Method = iota
-// 	MethodInsert
-// 	MethodDelete
-// )
-
-// type Query struct {
-// 	Method Method
-// 	Key    int
-// }
-
 func NewTree() tree_api.BPTree {
 	return &LockFreeTree{}
 }
 
 func (t *LockFreeTree) Insert(key int, value []byte) error {
-	// fmt.Println("Insert key", key, "value", value)
 	t.lock.Lock()
 
 	var pointer *tree_api.Record
 	var leaf *Node
 
-	// Removed for benchmarking purposes – we assume there are no duplicates in
-	// the input
-	// if _, err := t.Find(key, false); err == nil {
-	// 	return errors.New("key already exists")
-	// }
 
 	pointer, err := makeRecord(value)
 	if err != nil {
@@ -143,8 +122,6 @@ func (t *LockFreeTree) find(key int, verbose bool) (*tree_api.Record, error) {
 }
 
 func (t *LockFreeTree) Find(key int, verbose bool) (*tree_api.Record, error) {
-	// t.lock.Lock()
-	// defer t.lock.Unlock()
 	res, err := t.find(key, verbose)
 	if err != nil {
 		fmt.Println("Find key", key)

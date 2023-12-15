@@ -1,12 +1,17 @@
 package lock_free
 
-// import (
-// 	"errors"
-// 	"fmt"
-// 	"main/tree_api"
-// 	"reflect"
-// 	"sync"
-// )
+import (
+	"main/tree_api"
+)
+
+func (t *LockFreeTree) MakeOrphanedKeyInsertQueries(orphanedKeys []int) []tree_api.Query {
+	queries := make([]tree_api.Query, 0)
+	for _, key := range orphanedKeys {
+		value := tree_api.Record{Value: []byte("value")}
+		queries = append(queries, tree_api.Query{Method: tree_api.MethodInsert, Key: key, Done: false, Pointer: &value})
+	}
+	return queries
+}
 
 func (t *LockFreeTree) Stage4(finalModList [](map[*Node]([]*Modification)), palmMaxThreadCount int) {
 	orphanedKeys := make([]int, 0)
@@ -41,5 +46,9 @@ func (t *LockFreeTree) Stage4(finalModList [](map[*Node]([]*Modification)), palm
 	} else if t.Root.NumKeys == 0 {
 		t.Root = nil
 	}
-	// defer t.Palm(len(orphanedKeys), palmMaxThreadCount)
+	queries := t.MakeOrphanedKeyInsertQueries(orphanedKeys)
+	if len(queries) == 0 {
+		return
+	}
+	defer t.Palm(queries, palmMaxThreadCount)
 }

@@ -10,37 +10,23 @@ import (
 // Evenly distributes queries across all threads, return slice corresponding to ith thread
 func (t *LockFreeTree) PartitionInput(Q []tree_api.Query, i int, num_threads int) []tree_api.Query {
 	num_queries := len(Q)
-	// fmt.Printf("i: %d, num_threads: %d\n", i, num_threads)
 	start := i * (num_queries / num_threads) // because will never have 0 threads
 	end := start + (num_queries / num_threads)
-	// TODO: CHECK THIS MATH, Ensure all queries are in some partition
 	res := Q[start:end]
-	// fmt.Printf("\nIn PartitionInput for %d threads, thread_id: %d\n", num_threads, i)
-	// fmt.Printf("Queries:\n")
-	// for _, q := range res {
-	// 	fmt.Printf("res: QueryMethod: %d, QueryKey: %d\n", q.Method, q.Key)
-	// }
+
 
 	return res
 }
 
 func (t *LockFreeTree) FindMultiple(Q []tree_api.Query) [](*Node) {
 	res := [](*Node){}
-	// fmt.Printf("b4 len of res: %d\n", len(res))
 	verbose := false // debugging purposes
 	for _, q := range Q {
-		// TODO: potentially need to remove q from Q once found, or mark as done (serviced query)
-		// if q.Method == tree_api.MethodFind {
 		key := q.Key
 		node := t.findLeaf(key, verbose)
 		if !slices.Contains(res, node) {
-			res = append(res, node) // TODO: Check for errors
+			res = append(res, node)
 		}
-		// q.Done = true // Ensure this can actually be done in place like this
-		// fmt.Printf("after len of res: %d\n", len(res))
-		// } else {
-		// 	continue
-		// }
 	}
 	return res
 }
@@ -71,7 +57,6 @@ func (t *LockFreeTree) Stage1(queries []tree_api.Query, palmMaxThreadCount int) 
 		go t.modifySharedLeaves(i, sharedLeafData, queries, palmMaxThreadCount, &wg1)
 	}
 	wg1.Wait()
-	// fmt.Println("All workers have completed Stage 1.")
 
 	if dbg {
 		fmt.Println("Printing sharedLeafData vals")

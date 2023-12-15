@@ -59,16 +59,12 @@ func (t *LockFreeTree) modifyInternalNode(node *Node, mod *Modification) *Modifi
 }
 
 func (t *LockFreeTree) stage3Thread(sharedModLists [](map[*Node]([]*Modification)), newSharedModLists [](map[*Node]([]*Modification)), threadId int, depth int, doneWithRound chan bool, doneCopying chan bool) {
-	// fmt.Println("stage3Thread", threadId, depth)
-	// defer fmt.Println("done with stage3Thread", threadId)
 	for d := 1; d < depth; d++ {
-		// wg.Add(1)
 		updatedModList := t.getUpdatedModList(sharedModLists, threadId)
 		for node, modList := range updatedModList {
 			for _, mod := range modList {
 				newMod := t.modifyInternalNode(node, mod)
 				if newSharedModLists[threadId] == nil {
-					// fmt.Println("Quitting thread", threadId, "because newSharedModLists[threadId] is nil")
 					panic("huh")
 				}
 				if newMod != nil && newMod.Parent != nil {
@@ -76,11 +72,8 @@ func (t *LockFreeTree) stage3Thread(sharedModLists [](map[*Node]([]*Modification
 				}
 			}
 		}
-		// fmt.Println("done with depth", d, "thread", threadId)
 		doneWithRound <- true
-		// fmt.Println("Waiting for copy finish", threadId)
 		<-doneCopying
-		// fmt.Println("Done with copy finish", threadId)
 	}
 
 }
@@ -88,7 +81,6 @@ func (t *LockFreeTree) stage3Thread(sharedModLists [](map[*Node]([]*Modification
 func (t *LockFreeTree) Stage3(sharedModLists [](map[*Node]([]*Modification)), palmMaxThreadCount int) [](map[*Node]([]*Modification)) {
 	depth := t.height()
 	// spin off threads first, passing them sharedModLists and thread id
-	// wg := sync.WaitGroup{}
 	newSharedModLists := make([](map[*Node]([]*Modification)), palmMaxThreadCount)
 	for i := 0; i < palmMaxThreadCount; i++ {
 		newSharedModLists[i] = make(map[*Node]([]*Modification))
@@ -96,7 +88,6 @@ func (t *LockFreeTree) Stage3(sharedModLists [](map[*Node]([]*Modification)), pa
 	doneWithRound := make(chan bool)
 	doneCopying := make(chan bool)
 	for i := 0; i < palmMaxThreadCount; i++ {
-		// fmt.Println("spinning off thread", i)
 		go t.stage3Thread(sharedModLists, newSharedModLists, i, depth, doneWithRound, doneCopying)
 	}
 	// this loop just syncs after each loop iteration

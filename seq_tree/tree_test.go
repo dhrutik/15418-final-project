@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 )
-
+// Copied directly from https://github.com/collinglass/bptree
 func hello() {
 	fmt.Println("bptree says 'hello friend'")
 }
