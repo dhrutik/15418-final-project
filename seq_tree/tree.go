@@ -801,7 +801,11 @@ func (t *Tree) deleteEntry(n *Node, key int, pointer interface{}) {
 
 }
 
-func (t *Tree) Palm(key_count int, num_threads int) {}
+func (t *Tree) PalmBasic(key_count int, num_threads int) {}
+
+func (t *Tree) Palm(queries []tree_api.Query, num_threads int) [][]*tree_api.Record {
+	return nil
+}
 
 // func (t *Tree) Stage1(Q []tree_api.Query, i int, num_threads int) {}
 // func (t *Tree) Stage2(Q []tree_api.Query, i int, num_threads int) {}

@@ -722,8 +722,11 @@ func getNeighbourIndex(n *Node) int {
 func removeEntryFromNode(n *Node, key int, pointer interface{}) *Node {
 	var i, num_pointers int
 
-	for n.Keys[i] != key {
+	for i < len(n.Keys) && n.Keys[i] != key {
 		i += 1
+		// if i == len(n.Keys) {
+		// 	return n
+		// }
 	}
 
 	for i += 1; i < n.NumKeys; i++ {
@@ -924,7 +927,7 @@ func (t *LockFreeTree) deleteEntry(n *Node, key int, pointer interface{}) {
 
 }
 
-func (t *LockFreeTree) Palm(palmKeyCount int, palmMaxThreadCount int) {
+func (t *LockFreeTree) PalmBasic(palmKeyCount int, palmMaxThreadCount int) {
 	queries := make([]tree_api.Query, 0)
 	for i := 0; i < palmKeyCount; i++ {
 		queries = append(queries, tree_api.Query{tree_api.MethodFind, i, false, nil})
@@ -949,4 +952,21 @@ func (t *LockFreeTree) Palm(palmKeyCount int, palmMaxThreadCount int) {
 	if false {
 		print(R)
 	}
+}
+
+func (t *LockFreeTree) Palm(queries []tree_api.Query, palmMaxThreadCount int) [][]*tree_api.Record {
+	// fmt.Println("Starting Palm stage 1")
+	sharedLeafData := t.Stage1(queries, palmMaxThreadCount) // L
+	// fmt.Println("Finished Palm stage 1")
+	sharedModLists, R := t.Stage2(sharedLeafData, palmMaxThreadCount, queries) // M
+	// fmt.Println("Finished Palm stage 2")
+	finalModList := t.Stage3(sharedModLists, palmMaxThreadCount)
+	// fmt.Println("Finished Palm stage 3")
+	t.Stage4(finalModList, palmMaxThreadCount)
+	// fmt.Println("Finished Palm stage 4")
+
+	if false {
+		print(R)
+	}
+	return R
 }

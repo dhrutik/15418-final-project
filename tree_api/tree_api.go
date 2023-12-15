@@ -51,7 +51,8 @@ type BPTree interface {
 	// FindAndPrint(key int, verbose bool)
 	// FindAndPrintRange(key_start, key_end int, verbose bool)
 	// Stage1(Q []Query, i int, num_threads int)
-	Palm(key_count int, num_threads int)
+	PalmBasic(key_count int, num_threads int)
+	Palm(queries []Query, num_threads int) [][]*Record
 	// Stage1(Q []Query, i int, num_threads int)
 	// Stage2(Q []Query, i int, num_threads int)
 	// Stage3(Q []Query, i int, num_threads int)

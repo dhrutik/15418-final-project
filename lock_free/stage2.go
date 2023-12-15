@@ -154,7 +154,7 @@ func (t *LockFreeTree) modifySharedModLists(index int, sharedLeafData [][]*Node,
 }
 
 func (t *LockFreeTree) Stage2(sharedLeafData [][]*Node, palmMaxThreadCount int, queries []tree_api.Query) ([](map[*Node]([]*Modification)), [][]*tree_api.Record) {
-	fmt.Printf("Starting Stage 2\n")
+	// fmt.Printf("Starting Stage 2\n")
 	var wg2 sync.WaitGroup
 	dbg := false
 

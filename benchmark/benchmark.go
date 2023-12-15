@@ -2,6 +2,7 @@ package benchmark
 
 import (
 	"fmt"
+	"main/lock_free"
 	"main/tree_api"
 	"math/rand"
 	"time"
@@ -161,6 +162,97 @@ func InsertQueries(tree tree_api.BPTree, numKeys int, threads int) (time.Duratio
 	elapsedTime := time.Since(startTime)
 	throughput := float64(numKeys) / elapsedTime.Seconds()
 	fmt.Printf("Insert %d keys in %f seconds with %d threads, throughput: %f keys/s\n", numKeys, elapsedTime.Seconds(), threads, throughput)
+	return elapsedTime, throughput
+}
+
+func makeInsertQueryLists(totalKeyCount, perRoundKeyCount int) [][]tree_api.Query {
+	res := make([][]tree_api.Query, 0)
+	for i := 0; i < totalKeyCount; i += perRoundKeyCount {
+		queries := make([]tree_api.Query, 0)
+		for j := i; j < i+perRoundKeyCount; j++ {
+			queries = append(queries,
+				tree_api.Query{
+					Method:  tree_api.MethodInsert,
+					Key:     j,
+					Pointer: &tree_api.Record{Value: []byte("value")},
+				},
+			)
+		}
+		res = append(res, queries)
+	}
+	return res
+}
+
+func makeFindQueryLists(totalKeyCount, perRoundKeyCount int) [][]tree_api.Query {
+	res := make([][]tree_api.Query, 0)
+	for i := 0; i < totalKeyCount; i += perRoundKeyCount {
+		queries := make([]tree_api.Query, 0)
+		for j := i; j < i+perRoundKeyCount; j++ {
+			queries = append(queries,
+				tree_api.Query{
+					Method: tree_api.MethodFind,
+					Key:    j,
+				},
+			)
+		}
+		res = append(res, queries)
+	}
+	return res
+}
+
+func makeDeleteQueryLists(totalKeyCount, perRoundKeyCount int) [][]tree_api.Query {
+	res := make([][]tree_api.Query, 0)
+	for i := 0; i < totalKeyCount; i += perRoundKeyCount {
+		queries := make([]tree_api.Query, 0)
+		for j := i; j < i+perRoundKeyCount; j++ {
+			queries = append(queries,
+				tree_api.Query{
+					Method: tree_api.MethodDelete,
+					Key:    j,
+				},
+			)
+		}
+		res = append(res, queries)
+	}
+	return res
+}
+
+func PalmInsertBenchmark(tree *lock_free.LockFreeTree, totalKeyCount, perRoundKeyCount, threadCount int) (time.Duration, float64) {
+	queryLists := makeInsertQueryLists(totalKeyCount, perRoundKeyCount)
+	startTime := time.Now()
+	for i := 0; i < len(queryLists); i++ {
+		queries := queryLists[i]
+		tree.Palm(queries, threadCount)
+	}
+	elapsedTime := time.Since(startTime)
+	throughput := float64(totalKeyCount) / elapsedTime.Seconds()
+	fmt.Printf("Insert %d keys in %f seconds with %d threads, throughput: %f keys/s\n", totalKeyCount, elapsedTime.Seconds(), threadCount, throughput)
+	return elapsedTime, throughput
+}
+
+func PalmFindBenchmark(tree *lock_free.LockFreeTree, totalKeyCount, perRoundKeyCount, threadCount int) (time.Duration, float64) {
+	queryLists := makeFindQueryLists(totalKeyCount, perRoundKeyCount)
+	startTime := time.Now()
+	for i := 0; i < len(queryLists); i++ {
+		queries := queryLists[i]
+		tree.Palm(queries, threadCount)
+	}
+	elapsedTime := time.Since(startTime)
+	throughput := float64(totalKeyCount) / elapsedTime.Seconds()
+	fmt.Printf("Find %d keys in %f seconds with %d threads, throughput: %f keys/s\n", totalKeyCount, elapsedTime.Seconds(), threadCount, throughput)
+	return elapsedTime, throughput
+}
+
+func PalmDeleteBenchmark(tree *lock_free.LockFreeTree, totalKeyCount, perRoundKeyCount, threadCount int) (time.Duration, float64) {
+	queryLists := makeDeleteQueryLists(totalKeyCount, perRoundKeyCount)
+	startTime := time.Now()
+	for i := 0; i < len(queryLists); i++ {
+		queries := queryLists[i]
+		tree.Palm(queries, threadCount)
+	}
+	elapsedTime := time.Since(startTime)
+	throughput := float64(totalKeyCount) / elapsedTime.Seconds()
+	fmt.Printf("Find %d keys in %f seconds with %d threads, throughput: %f keys/s\n", totalKeyCount, elapsedTime.Seconds(), threadCount, throughput)
 	return elapsedTime, throughput
 }
 

@@ -55,8 +55,8 @@ func main() {
 	globalLockTrees := makeTreeList(maxThreadCount, global_lock_tree.NewTree)
 	crabTrees := makeTreeList(maxThreadCount, crab.NewTree)
 
-	FLAG_run_benchmarks := true
-	FLAG_test_palm := false
+	FLAG_run_benchmarks := false
+	FLAG_test_palm := true
 
 	if FLAG_run_benchmarks {
 		runBenchmark("Insert", benchmark.RunInsertBenchmark, seqTree, globalLockTrees, crabTrees, keyCount, maxThreadCount)
@@ -66,24 +66,18 @@ func main() {
 
 	if FLAG_test_palm {
 		palmTotalKeyCount := 1000000
-		palmKeyCount := 1000
+		palmKeyCount := 45000
 		lock_free_tree := lock_free.NewTree()
-		palmMaxThreadCount := 16
+		palmMaxThreadCount := 64
+		benchmark.InsertQueries(lock_free_tree, palmKeyCount, palmMaxThreadCount)
+		benchmark.PalmInsertBenchmark(lock_free_tree.(*lock_free.LockFreeTree), palmTotalKeyCount, palmKeyCount, palmMaxThreadCount)
+		benchmark.PalmFindBenchmark(lock_free_tree.(*lock_free.LockFreeTree), palmTotalKeyCount, palmKeyCount, palmMaxThreadCount)
+		benchmark.PalmDeleteBenchmark(lock_free_tree.(*lock_free.LockFreeTree), palmTotalKeyCount, palmKeyCount, palmMaxThreadCount)
 		// var wg1 sync.WaitGroup
 
 		// Construct Tree
-		benchmark.InsertQueries(lock_free_tree, palmKeyCount, palmMaxThreadCount)
-		for totalKeys := 0; totalKeys < palmTotalKeyCount; totalKeys += palmKeyCount {
-			lock_free_tree.Palm(palmKeyCount, palmMaxThreadCount)
-		}
-
-		// We are assured that the results reflect the state of the tree
-		// when each query was dispatched, because no modifications to the tree have occurred yet.
-
-		// Run Stage 2
-		// var wg2 sync.WaitGroup
-
-		// Stage 1 Test
-		// benchmark.RunStage1(lock_free_tree, queries, palmKeyCount, palmMaxThreadCount, &wg1)
+		// for totalKeys := 0; totalKeys < palmTotalKeyCount; totalKeys += palmKeyCount {
+		// 	lock_free_tree.PalmBasic(palmKeyCount, palmMaxThreadCount)
+		// }
 	}
 }

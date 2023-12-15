@@ -252,7 +252,6 @@ func (t *CrabTree) Delete(key int) error {
 	}
 	key_record, key_leaf, treeLocked, lockList, err := t.findForDelete(key, false)
 
-
 	defer t.clearLockList(treeLocked, lockList)
 	if err != nil {
 		return err
@@ -973,7 +972,11 @@ func (t *CrabTree) deleteEntry(n *Node, key int, pointer interface{}) {
 
 }
 
-func (t *CrabTree) Palm(key_count int, num_threads int) {}
+func (t *CrabTree) PalmBasic(key_count int, num_threads int) {
+
+}
+
+func (t *CrabTree) Palm(queries []tree_api.Query, num_threads int) [][]*tree_api.Record { return nil }
 
 // func (t *CrabTree) Stage1(Q []tree_api.Query, i int, num_threads int) {}
 // func (t *CrabTree) Stage2(Q []tree_api.Query, i int, num_threads int) {}

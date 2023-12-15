@@ -57,7 +57,11 @@ func (t *GlobalLockTree) PrintLeaves() {
 	t.tree.PrintLeaves()
 }
 
-func (t *GlobalLockTree) Palm(key_count int, num_threads int) {}
+func (t *GlobalLockTree) PalmBasic(key_count int, num_threads int) {}
+
+func (t *GlobalLockTree) Palm(query []tree_api.Query, num_threads int) [][]*tree_api.Record {
+	return nil
+}
 
 // func (t *GlobalLockTree) Stage1(Q []tree_api.Query, i int, num_threads int) {}
 // func (t *GlobalLockTree) Stage2(Q []tree_api.Query, i int, num_threads int) {}
