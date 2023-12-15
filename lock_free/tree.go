@@ -72,7 +72,6 @@ func (t *LockFreeTree) Insert(key int, value []byte) error {
 	var pointer *tree_api.Record
 	var leaf *Node
 
-
 	pointer, err := makeRecord(value)
 	if err != nil {
 		defer t.lock.Unlock()

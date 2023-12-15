@@ -14,7 +14,6 @@ func (t *LockFreeTree) PartitionInput(Q []tree_api.Query, i int, num_threads int
 	end := start + (num_queries / num_threads)
 	res := Q[start:end]
 
-
 	return res
 }
 
